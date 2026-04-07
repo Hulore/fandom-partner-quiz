@@ -86,141 +86,37 @@ export async function onRequestPost(context) {
     )
     .join("\n\n");
 
-  const payload = {
-    model: env.OPENAI_MODEL || "gpt-5-mini",
-    max_output_tokens: 1000,
-    text: {
-      verbosity: "medium",
-      format: {
-        type: "json_schema",
-        name: "onepiece_romance_story",
-        strict: true,
-        schema: {
-          type: "object",
-          additionalProperties: false,
-          properties: {
-            title: {
-              type: "string",
-              description: "Короткий красивый заголовок истории на русском языке.",
-            },
-            intro: {
-              type: "string",
-              description:
-                "Одно-два предложения, почему этот персонаж подходит пользователю.",
-            },
-            story: {
-              type: "string",
-              description:
-                "Цельная история на русском языке длиной 400-600 слов.",
-            },
-          },
-          required: ["title", "intro", "story"],
-        },
-      },
-    },
-    safety_identifier: visitorId,
-    input: [
-      {
-        role: "system",
-        content: [
-          {
-            type: "input_text",
-            text:
-              "Ты пишешь короткие романтические фан-истории по мотивам One Piece на русском языке. Пиши тепло, художественно и легко читаемо. Сюжет должен пройти путь от знакомства к отношениям, совместной жизни и тихому финалу в старости или в конце жизни. Финал может быть bittersweet, но без графичной смерти, жестокости и без трагедии ради трагедии. Никакой эротики: тон PG-13, чувственно, но без откровенных сцен. Сохраняй узнаваемый характер персонажа, но допускай мягкую романтическую AU-атмосферу. Не упоминай, что ты ИИ, не вставляй дисклеймеры, не используй списки.",
-          },
-        ],
-      },
-      {
-        role: "user",
-        content: [
-          {
-            type: "input_text",
-            text: `Создай историю для фановского опросника "Кто твой парень из One Piece?".
+  const promptContext = buildPromptContext(character, protagonist, answerSummary);
+  const model = env.OPENAI_MODEL || "gpt-5-mini";
 
-Главный романтический мэтч: ${character.name}
-Описание его вайба: ${character.flavor}
-Имя участницы или участника в истории: ${protagonist}
-Это результат большого теста о социальных привычках, стиле общения, границах и том, как человек живёт рядом с другими людьми.
+  const primaryAttempt = await requestStructuredStory({
+    apiKey: env.OPENAI_API_KEY,
+    model,
+    visitorId,
+    promptContext,
+  });
 
-Ответы участника:
-${answerSummary}
-
-Требования:
-- Напиши цельную историю на 400-600 слов.
-- Начни с первой встречи.
-- Покажи, как симпатия растёт в отношения.
-- Дай 2-3 жизненных эпизода из более поздних лет.
-- Заверши историю ощущением целой прожитой жизни.
-- Пиши в основном во втором лице, если имени нет. Если имя есть, используй имя естественно.
-- Тон должен быть романтичным, взрослым, нежным и атмосферным.
-- Добавь конкретные чувственные детали мира: море, ветер, корабли, порт, огни, кухня, дерево палубы или что-то подобное.
-- Не делай историю слишком сахарной: пусть будет живой и правдоподобной.
-- Не включай других пейрингов, ревности и explicit-контента.`,
-          },
-        ],
-      },
-    ],
-  };
-
-  let openaiResponse;
-  try {
-    openaiResponse = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    return jsonResponse(
-      { error: "Не удалось связаться с OpenAI API." },
-      502,
-    );
+  if (primaryAttempt.story) {
+    return jsonResponse({ story: primaryAttempt.story }, 200);
   }
 
-  const data = await openaiResponse.json().catch(() => null);
+  const fallbackAttempt = await requestFallbackStory({
+    apiKey: env.OPENAI_API_KEY,
+    model,
+    visitorId,
+    promptContext,
+  });
 
-  if (!openaiResponse.ok || !data) {
-    const message =
-      (data && data.error && data.error.message) ||
-      "OpenAI API вернул ошибку во время генерации истории.";
-
-    return jsonResponse({ error: message }, openaiResponse.status || 502);
+  if (fallbackAttempt.story) {
+    return jsonResponse({ story: fallbackAttempt.story }, 200);
   }
 
-  const rawText = extractOutputText(data);
+  const finalError =
+    fallbackAttempt.error ||
+    primaryAttempt.error ||
+    "Не удалось получить историю от OpenAI. Попробуй ещё раз через минуту.";
 
-  if (!rawText) {
-    return jsonResponse(
-      { error: "OpenAI не вернул текст истории в ожидаемом формате." },
-      502,
-    );
-  }
-
-  let story;
-  try {
-    story = JSON.parse(rawText);
-  } catch (error) {
-    return jsonResponse(
-      { error: "Не удалось разобрать структурированный ответ модели." },
-      502,
-    );
-  }
-
-  if (
-    !story ||
-    typeof story.title !== "string" ||
-    typeof story.intro !== "string" ||
-    typeof story.story !== "string"
-  ) {
-    return jsonResponse(
-      { error: "OpenAI вернул неполную структуру истории." },
-      502,
-    );
-  }
-
-  return jsonResponse({ story }, 200);
+  return jsonResponse({ error: finalError }, 502);
 }
 
 function sanitizeName(value) {
@@ -270,16 +166,188 @@ function sanitizeLine(value) {
   return value.replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
-function extractOutputText(data) {
+function buildPromptContext(character, protagonist, answerSummary) {
+  return `Создай историю для фановского опросника "Кто твой парень из One Piece?".
+
+Главный романтический мэтч: ${character.name}
+Описание его вайба: ${character.flavor}
+Имя участницы или участника в истории: ${protagonist}
+Это результат большого теста о социальных привычках, стиле общения, границах и том, как человек живёт рядом с другими людьми.
+
+Ответы участника:
+${answerSummary}
+
+Требования:
+- Напиши цельную историю на 400-600 слов.
+- Начни с первой встречи.
+- Покажи, как симпатия растёт в отношения.
+- Дай 2-3 жизненных эпизода из более поздних лет.
+- Заверши историю ощущением целой прожитой жизни.
+- Пиши в основном во втором лице, если имени нет. Если имя есть, используй имя естественно.
+- Тон должен быть романтичным, взрослым, нежным и атмосферным.
+- Добавь конкретные чувственные детали мира: море, ветер, корабли, порт, огни, кухня, дерево палубы или что-то подобное.
+- Не делай историю слишком сахарной: пусть будет живой и правдоподобной.
+- Не включай других пейрингов, ревности и explicit-контента.`;
+}
+
+async function requestStructuredStory({ apiKey, model, visitorId, promptContext }) {
+  const payload = {
+    model,
+    max_output_tokens: 1800,
+    text: {
+      verbosity: "medium",
+      format: {
+        type: "json_schema",
+        name: "onepiece_romance_story",
+        strict: true,
+        schema: {
+          type: "object",
+          additionalProperties: false,
+          properties: {
+            title: { type: "string" },
+            intro: { type: "string" },
+            story: { type: "string" },
+          },
+          required: ["title", "intro", "story"],
+        },
+      },
+    },
+    safety_identifier: visitorId,
+    input: buildBaseInput(promptContext),
+  };
+
+  const result = await callOpenAI(apiKey, payload);
+  if (result.error || !result.data) {
+    return { error: result.error };
+  }
+
+  const story = extractStoryObject(result.data);
+  if (story) {
+    return { story };
+  }
+
+  return {
+    error:
+      describeNonStoryResponse(result.data) ||
+      "OpenAI не вернул историю в структурированном формате.",
+  };
+}
+
+async function requestFallbackStory({ apiKey, model, visitorId, promptContext }) {
+  const payload = {
+    model,
+    max_output_tokens: 1800,
+    text: {
+      verbosity: "medium",
+    },
+    safety_identifier: visitorId,
+    input: [
+      ...buildBaseInput(promptContext),
+      {
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text:
+              'Верни ответ строго в JSON без markdown и без пояснений. Формат: {"title":"...","intro":"...","story":"..."}',
+          },
+        ],
+      },
+    ],
+  };
+
+  const result = await callOpenAI(apiKey, payload);
+  if (result.error || !result.data) {
+    return { error: result.error };
+  }
+
+  const story = extractStoryObject(result.data);
+  if (story) {
+    return { story };
+  }
+
+  return {
+    error:
+      describeNonStoryResponse(result.data) ||
+      "OpenAI ответил, но историю не удалось разобрать.",
+  };
+}
+
+function buildBaseInput(promptContext) {
+  return [
+    {
+      role: "system",
+      content: [
+        {
+          type: "input_text",
+          text:
+            "Ты пишешь короткие романтические фан-истории по мотивам One Piece на русском языке. Пиши тепло, художественно и легко читаемо. Сюжет должен пройти путь от знакомства к отношениям, совместной жизни и тихому финалу в старости или в конце жизни. Финал может быть bittersweet, но без графичной смерти, жестокости и без трагедии ради трагедии. Никакой эротики: тон PG-13, чувственно, но без откровенных сцен. Сохраняй узнаваемый характер персонажа, но допускай мягкую романтическую AU-атмосферу. Не упоминай, что ты ИИ, не вставляй дисклеймеры, не используй списки.",
+        },
+      ],
+    },
+    {
+      role: "user",
+      content: [
+        {
+          type: "input_text",
+          text: promptContext,
+        },
+      ],
+    },
+  ];
+}
+
+async function callOpenAI(apiKey, payload) {
+  let openaiResponse;
+  try {
+    openaiResponse = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    return { error: "Не удалось связаться с OpenAI API." };
+  }
+
+  const data = await openaiResponse.json().catch(() => null);
+
+  if (!openaiResponse.ok || !data) {
+    const message =
+      (data && data.error && data.error.message) ||
+      "OpenAI API вернул ошибку во время генерации истории.";
+
+    return { error: message };
+  }
+
+  return { data };
+}
+
+function extractStoryObject(data) {
+  const candidates = collectTextCandidates(data);
+
+  for (const candidate of candidates) {
+    const story = parseStoryCandidate(candidate);
+    if (story) {
+      return story;
+    }
+  }
+
+  return null;
+}
+
+function collectTextCandidates(data) {
+  const candidates = [];
+
   if (typeof data.output_text === "string" && data.output_text.trim()) {
-    return data.output_text.trim();
+    candidates.push(data.output_text.trim());
   }
 
   if (!Array.isArray(data.output)) {
-    return "";
+    return candidates;
   }
-
-  const parts = [];
 
   for (const item of data.output) {
     if (!Array.isArray(item.content)) {
@@ -287,13 +355,109 @@ function extractOutputText(data) {
     }
 
     for (const content of item.content) {
-      if (content.type === "output_text" && typeof content.text === "string") {
-        parts.push(content.text);
+      if (typeof content.text === "string" && content.text.trim()) {
+        candidates.push(content.text.trim());
+      }
+
+      if (content.parsed && typeof content.parsed === "object") {
+        candidates.push(JSON.stringify(content.parsed));
+      }
+
+      if (content.json && typeof content.json === "object") {
+        candidates.push(JSON.stringify(content.json));
       }
     }
   }
 
-  return parts.join("").trim();
+  return candidates;
+}
+
+function parseStoryCandidate(candidate) {
+  const direct = tryParseJson(candidate);
+  if (isValidStory(direct)) {
+    return normalizeStory(direct);
+  }
+
+  const fenced = candidate.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced) {
+    const fencedParsed = tryParseJson(fenced[1]);
+    if (isValidStory(fencedParsed)) {
+      return normalizeStory(fencedParsed);
+    }
+  }
+
+  const objectLike = candidate.match(/\{[\s\S]*\}/);
+  if (objectLike) {
+    const objectParsed = tryParseJson(objectLike[0]);
+    if (isValidStory(objectParsed)) {
+      return normalizeStory(objectParsed);
+    }
+  }
+
+  return null;
+}
+
+function tryParseJson(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isValidStory(story) {
+  return Boolean(
+    story &&
+      typeof story.title === "string" &&
+      typeof story.intro === "string" &&
+      typeof story.story === "string",
+  );
+}
+
+function normalizeStory(story) {
+  return {
+    title: story.title.trim(),
+    intro: story.intro.trim(),
+    story: story.story.trim(),
+  };
+}
+
+function describeNonStoryResponse(data) {
+  if (data && data.status === "incomplete") {
+    const reason =
+      data.incomplete_details &&
+      typeof data.incomplete_details.reason === "string"
+        ? data.incomplete_details.reason
+        : "unknown";
+
+    if (reason === "max_output_tokens") {
+      return "OpenAI оборвал ответ из-за лимита длины. Попробуй снова.";
+    }
+
+    return `OpenAI не завершил ответ: ${reason}.`;
+  }
+
+  if (!Array.isArray(data && data.output)) {
+    return "";
+  }
+
+  for (const item of data.output) {
+    if (!Array.isArray(item.content)) {
+      continue;
+    }
+
+    for (const content of item.content) {
+      if (content.type === "refusal" && typeof content.refusal === "string") {
+        return content.refusal;
+      }
+    }
+  }
+
+  return "";
 }
 
 function jsonResponse(payload, status) {
