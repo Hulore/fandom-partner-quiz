@@ -78,7 +78,14 @@ export async function onRequestPost(context) {
     return jsonResponse({ error: "Для истории нужны ответы на тест." }, 400);
   }
 
-  const protagonist = participantName || "ты";
+  if (!participantName) {
+    return jsonResponse(
+      { error: "Для генерации истории нужно имя участника." },
+      400,
+    );
+  }
+
+  const protagonist = participantName;
   const answerSummary = answers
     .map(
       (entry, index) =>
@@ -97,7 +104,10 @@ export async function onRequestPost(context) {
   });
 
   if (primaryAttempt.story) {
-    return jsonResponse({ story: primaryAttempt.story }, 200);
+    return jsonResponse(
+      { story: ensureNamePresence(primaryAttempt.story, participantName, character.name) },
+      200,
+    );
   }
 
   const fallbackAttempt = await requestFallbackStory({
@@ -108,7 +118,10 @@ export async function onRequestPost(context) {
   });
 
   if (fallbackAttempt.story) {
-    return jsonResponse({ story: fallbackAttempt.story }, 200);
+    return jsonResponse(
+      { story: ensureNamePresence(fallbackAttempt.story, participantName, character.name) },
+      200,
+    );
   }
 
   const finalError =
@@ -179,11 +192,12 @@ ${answerSummary}
 
 Требования:
 - Напиши цельную историю на 400-600 слов.
+- Обязательно используй имя участника "${protagonist}" в самой истории и не меньше трёх раз по ходу текста.
 - Начни с первой встречи.
 - Покажи, как симпатия растёт в отношения.
 - Дай 2-3 жизненных эпизода из более поздних лет.
 - Заверши историю ощущением целой прожитой жизни.
-- Пиши в основном во втором лице, если имени нет. Если имя есть, используй имя естественно.
+- Используй имя естественно, без сухого перечисления.
 - Тон должен быть романтичным, взрослым, нежным и атмосферным.
 - Добавь конкретные чувственные детали мира: море, ветер, корабли, порт, огни, кухня, дерево палубы или что-то подобное.
 - Не делай историю слишком сахарной: пусть будет живой и правдоподобной.
@@ -423,6 +437,27 @@ function normalizeStory(story) {
     title: story.title.trim(),
     intro: story.intro.trim(),
     story: story.story.trim(),
+  };
+}
+
+function ensureNamePresence(story, participantName, characterName) {
+  if (!participantName) {
+    return story;
+  }
+
+  const safeName = participantName.trim();
+  const lowerName = safeName.toLocaleLowerCase("ru");
+  const introHasName = story.intro.toLocaleLowerCase("ru").includes(lowerName);
+  const storyHasName = story.story.toLocaleLowerCase("ru").includes(lowerName);
+
+  return {
+    title: story.title,
+    intro: introHasName
+      ? story.intro
+      : `${safeName} и ${characterName} удивительно легко совпали по ритму чувств. ${story.intro}`,
+    story: storyHasName
+      ? story.story
+      : `Для ${safeName} всё началось с моря, ветра и той самой встречи, после которой жизнь уже не осталась прежней.\n\n${story.story}`,
   };
 }
 

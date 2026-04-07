@@ -70,6 +70,7 @@
                   id="participantName"
                   name="participantName"
                   type="text"
+                  required
                   maxlength="40"
                   placeholder="Например, Алина"
                 />
@@ -86,11 +87,24 @@
               </label>
             </div>
 
+            <div class="question-progress">
+              <div class="question-progress-head">
+                <p class="panel-kicker">Шаг 1 из 20</p>
+                <p id="question-progress-text" class="question-progress-text"></p>
+              </div>
+              <div class="question-progress-bar" aria-hidden="true">
+                <div id="question-progress-fill" class="question-progress-fill"></div>
+              </div>
+            </div>
+
             <div id="quiz-questions" class="question-stack"></div>
 
             <div class="form-actions">
-              <button type="submit" class="primary-button">
-                Узнать результат
+              <button id="previous-button" type="button" class="ghost-button">
+                Назад
+              </button>
+              <button id="next-button" type="submit" class="primary-button">
+                Дальше
               </button>
               <p id="form-message" class="form-message" aria-live="polite"></p>
             </div>

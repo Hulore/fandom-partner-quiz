@@ -3,7 +3,7 @@ const CHARACTERS = {
     id: "zoro",
     name: "Ророноа Зоро",
     crest: "ZR",
-    image: "./assets/characters/zoro.jpg",
+    image: "/assets/characters/zoro.jpg",
     subtitle: "Тихая опора, которая любит не словами, а постоянством.",
     description:
       "Тебе подходит человек, рядом с которым шум мира затихает. С Зоро любовь выглядит как редкая, почти суровая преданность: мало лишних фраз, зато много поступков.",
@@ -15,7 +15,7 @@ const CHARACTERS = {
     id: "sanji",
     name: "Санджи",
     crest: "SJ",
-    image: "./assets/characters/sanji.jpg",
+    image: "/assets/characters/sanji.jpg",
     subtitle: "Романтик, который превращает обычный вечер в событие.",
     description:
       "Тебе откликается яркая забота, внимание к мелочам и партнёр, который умеет делать каждый день чуть красивее. Санджи любит щедро, пылко и очень по-домашнему.",
@@ -27,7 +27,7 @@ const CHARACTERS = {
     id: "law",
     name: "Трафальгар Ло",
     crest: "LW",
-    image: "./assets/characters/law.jpg",
+    image: "/assets/characters/law.jpg",
     subtitle: "Человек-тайна, который впускает в сердце только по-настоящему своего.",
     description:
       "Тебе подходит сложная, медленная и глубокая привязанность. Ло не раскрывается всем подряд, но если уж выбирает тебя, то это серьёзно, надолго и очень честно.",
@@ -39,7 +39,7 @@ const CHARACTERS = {
     id: "ace",
     name: "Портгас Д. Эйс",
     crest: "AC",
-    image: "./assets/characters/ace.jpg",
+    image: "/assets/characters/ace.jpg",
     subtitle: "Солнечный пожар, рядом с которым жизнь чувствуется ярче.",
     description:
       "Тебя тянет к людям, в которых много света, риска и щедрого сердца. С Эйсом история выходит живой, искренней и полной ощущения, что каждый день стоит проживать смело.",
@@ -51,7 +51,7 @@ const CHARACTERS = {
     id: "shanks",
     name: "Шанкс",
     crest: "SK",
-    image: "./assets/characters/shanks.jpg",
+    image: "/assets/characters/shanks.jpg",
     subtitle: "Свобода, смех и редкая уверенность, что рядом взрослый человек.",
     description:
       "Тебе подходит кто-то харизматичный и лёгкий, но по-настоящему надёжный в важные моменты. Шанкс умеет делать жизнь шире, веселее и при этом безопаснее.",
@@ -63,7 +63,7 @@ const CHARACTERS = {
     id: "sabo",
     name: "Сабо",
     crest: "SB",
-    image: "./assets/characters/sabo.jpg",
+    image: "/assets/characters/sabo.jpg",
     subtitle: "Нежная интеллигентность, идеалы и чувство настоящего союза.",
     description:
       "Тебе важен партнёр, с которым можно и мечтать, и строить реальную жизнь. Сабо даёт чувство товарищества, уважения и любви, в которой вы оба становитесь сильнее.",
@@ -603,6 +603,8 @@ const resultPanel = document.querySelector("#result-panel");
 const generateButton = document.querySelector("#generate-button");
 const restartButton = document.querySelector("#restart-button");
 const copyButton = document.querySelector("#copy-button");
+const previousButton = document.querySelector("#previous-button");
+const nextButton = document.querySelector("#next-button");
 const storyBox = document.querySelector("#story-box");
 const storyStatus = document.querySelector("#story-status");
 const storyTitle = document.querySelector("#story-title");
@@ -611,17 +613,37 @@ const storyText = document.querySelector("#story-text");
 const resultImage = document.querySelector("#result-image");
 const resultImageFallback = document.querySelector("#result-image-fallback");
 const resultCrest = document.querySelector("#result-crest");
+const progressText = document.querySelector("#question-progress-text");
+const progressFill = document.querySelector("#question-progress-fill");
+const participantNameInput = document.querySelector("#participantName");
+const ageConfirmedInput = document.querySelector("#ageConfirmed");
 
 const state = {
   result: null,
-  answers: [],
+  answers: {},
   story: null,
+  questionOrder: [],
+  currentQuestionIndex: 0,
 };
 
-renderQuestions();
+initializeQuiz();
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+
+  if (!validateProfile()) {
+    return;
+  }
+
+  if (!persistCurrentAnswer({ showError: true })) {
+    return;
+  }
+
+  if (state.currentQuestionIndex < state.questionOrder.length - 1) {
+    state.currentQuestionIndex += 1;
+    renderCurrentQuestion();
+    return;
+  }
 
   const result = calculateResult();
   if (!result.ok) {
@@ -638,6 +660,22 @@ form.addEventListener("submit", (event) => {
   updateResultPanel(result.character, result.answers);
   resultPanel.classList.remove("hidden");
   resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+questionRoot.addEventListener("change", () => {
+  persistCurrentAnswer({ showError: false });
+  formMessage.textContent = "";
+});
+
+previousButton.addEventListener("click", () => {
+  persistCurrentAnswer({ showError: false });
+
+  if (state.currentQuestionIndex === 0) {
+    return;
+  }
+
+  state.currentQuestionIndex -= 1;
+  renderCurrentQuestion();
 });
 
 generateButton.addEventListener("click", async () => {
@@ -693,10 +731,11 @@ restartButton.addEventListener("click", () => {
   form.reset();
   formMessage.textContent = "";
   state.result = null;
-  state.answers = [];
+  state.answers = {};
   state.story = null;
   resultPanel.classList.add("hidden");
   resetStoryUi();
+  initializeQuiz();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
@@ -715,49 +754,90 @@ copyButton.addEventListener("click", async () => {
   }
 });
 
-function renderQuestions() {
-  questionRoot.innerHTML = QUESTIONS.map((question, questionIndex) => {
-    const optionsHtml = question.options
-      .map(
-        (option, optionIndex) => `
-          <label class="answer-card">
-            <input
-              type="radio"
-              name="${question.id}"
-              value="${optionIndex}"
-              required
-            />
-            <span>
-              <strong>${option.title}</strong>
-              <small>${option.note}</small>
-            </span>
-          </label>
-        `,
-      )
-      .join("");
+function initializeQuiz() {
+  state.questionOrder = shuffleArray([...QUESTIONS]);
+  state.currentQuestionIndex = 0;
+  state.answers = {};
+  renderCurrentQuestion();
+}
 
-    return `
-      <section class="question-card">
-        <p class="question-number">Вопрос ${questionIndex + 1}</p>
-        <h3>${question.prompt}</h3>
-        <div class="answers-grid">${optionsHtml}</div>
-      </section>
-    `;
-  }).join("");
+function renderCurrentQuestion() {
+  const question = state.questionOrder[state.currentQuestionIndex];
+  const selectedValue = state.answers[question.id];
+  const isLastQuestion = state.currentQuestionIndex === state.questionOrder.length - 1;
+
+  const optionsHtml = question.options
+    .map(
+      (option, optionIndex) => `
+        <label class="answer-card">
+          <input
+            type="radio"
+            name="${question.id}"
+            value="${optionIndex}"
+            ${selectedValue === optionIndex ? "checked" : ""}
+          />
+          <span>
+            <strong>${option.title}</strong>
+            <small>${option.note}</small>
+          </span>
+        </label>
+      `,
+    )
+    .join("");
+
+  questionRoot.innerHTML = `
+    <section class="question-card">
+      <p class="question-number">Вопрос ${state.currentQuestionIndex + 1}</p>
+      <h3>${question.prompt}</h3>
+      <div class="answers-grid">${optionsHtml}</div>
+    </section>
+  `;
+
+  const progressPercent = ((state.currentQuestionIndex + 1) / state.questionOrder.length) * 100;
+  progressText.textContent = `${state.currentQuestionIndex + 1} / ${state.questionOrder.length}`;
+  progressFill.style.width = `${progressPercent}%`;
+  previousButton.disabled = state.currentQuestionIndex === 0;
+  nextButton.textContent = isLastQuestion ? "Узнать результат" : "Дальше";
+  formMessage.textContent = "";
+}
+
+function persistCurrentAnswer({ showError }) {
+  const question = state.questionOrder[state.currentQuestionIndex];
+  const selected = form.querySelector(`input[name="${question.id}"]:checked`);
+
+  if (!selected) {
+    if (showError) {
+      formMessage.textContent = "Выбери один вариант ответа, чтобы двигаться дальше.";
+    }
+
+    return false;
+  }
+
+  state.answers[question.id] = Number(selected.value);
+  return true;
+}
+
+function validateProfile() {
+  const participantName = normalizeName(participantNameInput.value.trim());
+  const ageConfirmed = ageConfirmedInput.checked;
+
+  if (!participantName) {
+    formMessage.textContent = "Впиши имя: оно обязательно появится в итоговой истории.";
+    participantNameInput.focus();
+    return false;
+  }
+
+  if (!ageConfirmed) {
+    formMessage.textContent = "Нужно подтвердить 18+, чтобы сгенерировать романтическую историю.";
+    return false;
+  }
+
+  participantNameInput.value = participantName;
+  return true;
 }
 
 function calculateResult() {
-  const participantName = normalizeName(
-    document.querySelector("#participantName").value.trim(),
-  );
-  const ageConfirmed = document.querySelector("#ageConfirmed").checked;
-
-  if (!ageConfirmed) {
-    return {
-      ok: false,
-      message: "Нужно подтвердить 18+, чтобы сгенерировать романтическую историю.",
-    };
-  }
+  const participantName = normalizeName(participantNameInput.value.trim());
 
   const scores = Object.fromEntries(
     Object.keys(CHARACTERS).map((characterId) => [characterId, 0]),
@@ -765,17 +845,17 @@ function calculateResult() {
 
   const answers = [];
 
-  for (const question of QUESTIONS) {
-    const selected = form.querySelector(`input[name="${question.id}"]:checked`);
+  for (const question of state.questionOrder) {
+    const selectedValue = state.answers[question.id];
 
-    if (!selected) {
+    if (typeof selectedValue !== "number") {
       return {
         ok: false,
         message: "Пожалуйста, ответь на все вопросы, чтобы я собрал точный мэтч.",
       };
     }
 
-    const option = question.options[Number(selected.value)];
+    const option = question.options[selectedValue];
 
     Object.entries(option.scores).forEach(([characterId, points]) => {
       scores[characterId] += points;
@@ -797,10 +877,6 @@ function calculateResult() {
   });
 
   const character = CHARACTERS[sorted[0][0]];
-
-  if (!participantName) {
-    document.querySelector("#participantName").value = "";
-  }
 
   return {
     ok: true,
@@ -834,6 +910,8 @@ function updateResultImage(character) {
   resultCrest.classList.remove("hidden");
   resultImage.removeAttribute("src");
   resultImage.alt = "";
+  resultImage.onload = null;
+  resultImage.onerror = null;
 
   if (!character.image) {
     resultImageFallback.classList.remove("hidden");
@@ -883,4 +961,15 @@ function getVisitorId() {
   const created = `visitor-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
   window.localStorage.setItem(storageKey, created);
   return created;
+}
+
+function shuffleArray(items) {
+  const copy = [...items];
+
+  for (let index = copy.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [copy[index], copy[swapIndex]] = [copy[swapIndex], copy[index]];
+  }
+
+  return copy;
 }
