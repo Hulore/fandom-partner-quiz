@@ -929,18 +929,14 @@ function updateResultImage(character) {
     return;
   }
 
-  resultImage.onload = () => {
-    resultImage.classList.remove("hidden");
-    resultImageFallback.classList.add("hidden");
-    resultCrest.classList.add("hidden");
-  };
-
   resultImage.onerror = () => {
     resultImage.classList.add("hidden");
     resultImageFallback.classList.remove("hidden");
     resultCrest.classList.remove("hidden");
   };
 
+  resultImage.classList.remove("hidden");
+  resultCrest.classList.add("hidden");
   resultImage.src = embeddedImage;
   resultImage.alt = `Портрет персонажа ${character.name}`;
 }
