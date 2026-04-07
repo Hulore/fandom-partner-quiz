@@ -109,7 +109,20 @@
           </div>
 
           <div id="result-card" class="result-card">
-            <div class="result-crest" id="result-crest">?</div>
+            <div class="result-visual">
+              <div class="result-crest" id="result-crest">?</div>
+              <img
+                id="result-image"
+                class="result-image hidden"
+                src=""
+                alt=""
+                loading="lazy"
+              />
+              <div id="result-image-fallback" class="result-image-fallback hidden">
+                <p>Арт ещё не добавлен</p>
+                <small>Положи картинку в `assets/characters` и она появится здесь.</small>
+              </div>
+            </div>
             <div class="result-copy">
               <p id="result-label" class="result-label">Твой мэтч</p>
               <h3 id="result-name">Сейчас всё посчитаем...</h3>

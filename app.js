@@ -3,6 +3,7 @@ const CHARACTERS = {
     id: "zoro",
     name: "Ророноа Зоро",
     crest: "ZR",
+    image: "./assets/characters/zoro.png",
     subtitle: "Тихая опора, которая любит не словами, а постоянством.",
     description:
       "Тебе подходит человек, рядом с которым шум мира затихает. С Зоро любовь выглядит как редкая, почти суровая преданность: мало лишних фраз, зато много поступков.",
@@ -14,6 +15,7 @@ const CHARACTERS = {
     id: "sanji",
     name: "Санджи",
     crest: "SJ",
+    image: "./assets/characters/sanji.png",
     subtitle: "Романтик, который превращает обычный вечер в событие.",
     description:
       "Тебе откликается яркая забота, внимание к мелочам и партнёр, который умеет делать каждый день чуть красивее. Санджи любит щедро, пылко и очень по-домашнему.",
@@ -25,6 +27,7 @@ const CHARACTERS = {
     id: "law",
     name: "Трафальгар Ло",
     crest: "LW",
+    image: "./assets/characters/law.png",
     subtitle: "Человек-тайна, который впускает в сердце только по-настоящему своего.",
     description:
       "Тебе подходит сложная, медленная и глубокая привязанность. Ло не раскрывается всем подряд, но если уж выбирает тебя, то это серьёзно, надолго и очень честно.",
@@ -36,6 +39,7 @@ const CHARACTERS = {
     id: "ace",
     name: "Портгас Д. Эйс",
     crest: "AC",
+    image: "./assets/characters/ace.png",
     subtitle: "Солнечный пожар, рядом с которым жизнь чувствуется ярче.",
     description:
       "Тебя тянет к людям, в которых много света, риска и щедрого сердца. С Эйсом история выходит живой, искренней и полной ощущения, что каждый день стоит проживать смело.",
@@ -47,6 +51,7 @@ const CHARACTERS = {
     id: "shanks",
     name: "Шанкс",
     crest: "SK",
+    image: "./assets/characters/shanks.png",
     subtitle: "Свобода, смех и редкая уверенность, что рядом взрослый человек.",
     description:
       "Тебе подходит кто-то харизматичный и лёгкий, но по-настоящему надёжный в важные моменты. Шанкс умеет делать жизнь шире, веселее и при этом безопаснее.",
@@ -58,6 +63,7 @@ const CHARACTERS = {
     id: "sabo",
     name: "Сабо",
     crest: "SB",
+    image: "./assets/characters/sabo.png",
     subtitle: "Нежная интеллигентность, идеалы и чувство настоящего союза.",
     description:
       "Тебе важен партнёр, с которым можно и мечтать, и строить реальную жизнь. Сабо даёт чувство товарищества, уважения и любви, в которой вы оба становитесь сильнее.",
@@ -602,6 +608,9 @@ const storyStatus = document.querySelector("#story-status");
 const storyTitle = document.querySelector("#story-title");
 const storyIntro = document.querySelector("#story-intro");
 const storyText = document.querySelector("#story-text");
+const resultImage = document.querySelector("#result-image");
+const resultImageFallback = document.querySelector("#result-image-fallback");
+const resultCrest = document.querySelector("#result-crest");
 
 const state = {
   result: null,
@@ -801,13 +810,14 @@ function calculateResult() {
 }
 
 function updateResultPanel(character, answers) {
-  document.querySelector("#result-crest").textContent = character.crest;
+  resultCrest.textContent = character.crest;
   document.querySelector("#result-name").textContent = character.name;
   document.querySelector("#result-subtitle").textContent = character.subtitle;
   document.querySelector("#result-description").textContent = character.description;
   document.querySelector("#result-traits").innerHTML = character.traits
     .map((trait) => `<span>${trait}</span>`)
     .join("");
+  updateResultImage(character);
 
   const answerHighlights = answers
     .slice(0, 3)
@@ -816,6 +826,34 @@ function updateResultPanel(character, answers) {
 
   document.querySelector("#result-label").textContent = `Твой мэтч`;
   storyStatus.textContent = `Совпадение собрано по твоим ответам: ${answerHighlights}`;
+}
+
+function updateResultImage(character) {
+  resultImage.classList.add("hidden");
+  resultImageFallback.classList.add("hidden");
+  resultCrest.classList.remove("hidden");
+  resultImage.removeAttribute("src");
+  resultImage.alt = "";
+
+  if (!character.image) {
+    resultImageFallback.classList.remove("hidden");
+    return;
+  }
+
+  resultImage.onload = () => {
+    resultImage.classList.remove("hidden");
+    resultImageFallback.classList.add("hidden");
+    resultCrest.classList.add("hidden");
+  };
+
+  resultImage.onerror = () => {
+    resultImage.classList.add("hidden");
+    resultImageFallback.classList.remove("hidden");
+    resultCrest.classList.remove("hidden");
+  };
+
+  resultImage.src = character.image;
+  resultImage.alt = `Портрет персонажа ${character.name}`;
 }
 
 function resetStoryUi() {
