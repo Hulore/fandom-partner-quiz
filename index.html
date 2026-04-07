@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+    <title>Кто твой парень из One Piece?</title>
+    <meta
+      name="description"
+      content="Фановый опросник по One Piece с ИИ-историей любви на основе твоего результата."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <p class="eyebrow">Fan Romance Quiz</p>
+        <div class="hero-grid">
+          <section class="hero-copy">
+            <h1>Кто твой парень из One Piece?</h1>
+            <p class="hero-text">
+              Пройди короткий тест, узнай свой мэтч и получи мини-историю о
+              вашем знакомстве, любви, общей жизни и тихом финале длиной в
+              целую судьбу.
+            </p>
+            <div class="hero-tags">
+              <span>6 взрослых персонажей</span>
+              <span>20 социальных вопросов</span>
+              <span>ИИ-история на 400-600 слов</span>
+            </div>
+          </section>
+          <aside class="hero-card">
+            <p class="hero-card-kicker">Что внутри</p>
+            <ul class="hero-list">
+              <li>Романтичный, но аккуратный тон без откровенных сцен</li>
+              <li>Матч по вайбу, а не случайная выдача</li>
+              <li>История на русском языке под твои ответы</li>
+            </ul>
+            <p class="hero-note">
+              Неофициальный фан-проект. В подборе участвуют только взрослые
+              персонажи.
+            </p>
+          </aside>
+        </div>
+      </header>
+
+      <main class="content-grid">
+        <section class="quiz-panel panel">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Шаг 1</p>
+              <h2>Расскажи немного о себе</h2>
+            </div>
+            <p class="panel-meta">20 вопросов про общение, границы и стиль жизни</p>
+          </div>
+
+          <form id="quiz-form" novalidate>
+            <div class="profile-grid">
+              <label class="field">
+                <span>Как тебя назвать в истории?</span>
+                <input
+                  id="participantName"
+                  name="participantName"
+                  type="text"
+                  maxlength="40"
+                  placeholder="Например, Алина"
+                />
+              </label>
+
+              <label class="field checkbox-field">
+                <input
+                  id="ageConfirmed"
+                  name="ageConfirmed"
+                  type="checkbox"
+                  required
+                />
+                <span>Мне 18+ и я хочу романтическую, но не откровенную историю</span>
+              </label>
+            </div>
+
+            <div id="quiz-questions" class="question-stack"></div>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-button">
+                Узнать результат
+              </button>
+              <p id="form-message" class="form-message" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+
+        <section id="result-panel" class="result-panel panel hidden" aria-live="polite">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Шаг 2</p>
+              <h2>Твой результат</h2>
+            </div>
+            <button id="restart-button" class="ghost-button" type="button">
+              Пройти заново
+            </button>
+          </div>
+
+          <div id="result-card" class="result-card">
+            <div class="result-crest" id="result-crest">?</div>
+            <div class="result-copy">
+              <p id="result-label" class="result-label">Твой мэтч</p>
+              <h3 id="result-name">Сейчас всё посчитаем...</h3>
+              <p id="result-subtitle" class="result-subtitle"></p>
+              <p id="result-description" class="result-description"></p>
+              <div id="result-traits" class="result-traits"></div>
+            </div>
+          </div>
+
+          <div class="story-actions">
+            <button id="generate-button" class="primary-button" type="button">
+              Сгенерировать нашу историю
+            </button>
+            <p class="story-hint">
+              История создаётся после результата и учитывает твои ответы.
+            </p>
+          </div>
+
+          <div id="story-box" class="story-box hidden">
+            <div class="story-head">
+              <div>
+                <p class="panel-kicker">Шаг 3</p>
+                <h3 id="story-title">Ваша история</h3>
+              </div>
+              <button id="copy-button" class="ghost-button" type="button">
+                Скопировать
+              </button>
+            </div>
+            <p id="story-intro" class="story-intro"></p>
+            <article id="story-text" class="story-text"></article>
+          </div>
+
+          <p id="story-status" class="story-status" aria-live="polite"></p>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
