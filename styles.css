@@ -188,6 +188,15 @@ body::after {
   align-items: start;
 }
 
+.content-grid.result-mode {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.content-grid.result-mode .result-panel {
+  width: min(900px, 100%);
+}
+
 .panel {
   padding: 28px;
 }
@@ -585,6 +594,10 @@ input[type="text"]:focus,
   .result-panel {
     position: static;
   }
+
+  .content-grid.result-mode .result-panel {
+    width: 100%;
+  }
 }
 
 @media (max-width: 720px) {
@@ -614,6 +627,10 @@ input[type="text"]:focus,
 
   .result-card {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .result-copy h3 {
+    font-size: clamp(2rem, 12vw, 3rem);
   }
 
   .story-actions .primary-button,

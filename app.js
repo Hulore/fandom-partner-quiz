@@ -599,6 +599,8 @@ const QUESTIONS = [
 const form = document.querySelector("#quiz-form");
 const questionRoot = document.querySelector("#quiz-questions");
 const formMessage = document.querySelector("#form-message");
+const quizPanel = document.querySelector("#quiz-panel");
+const contentGrid = document.querySelector("#content-grid");
 const resultPanel = document.querySelector("#result-panel");
 const generateButton = document.querySelector("#generate-button");
 const restartButton = document.querySelector("#restart-button");
@@ -658,6 +660,8 @@ form.addEventListener("submit", (event) => {
 
   resetStoryUi();
   updateResultPanel(result.character, result.answers);
+  quizPanel.classList.add("hidden");
+  contentGrid.classList.add("result-mode");
   resultPanel.classList.remove("hidden");
   resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
 });
@@ -734,6 +738,8 @@ restartButton.addEventListener("click", () => {
   state.answers = {};
   state.story = null;
   resultPanel.classList.add("hidden");
+  quizPanel.classList.remove("hidden");
+  contentGrid.classList.remove("result-mode");
   resetStoryUi();
   initializeQuiz();
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -905,6 +911,11 @@ function updateResultPanel(character, answers) {
 }
 
 function updateResultImage(character) {
+  const embeddedImage =
+    window.CHARACTER_IMAGE_DATA && window.CHARACTER_IMAGE_DATA[character.id]
+      ? window.CHARACTER_IMAGE_DATA[character.id]
+      : character.image;
+
   resultImage.classList.add("hidden");
   resultImageFallback.classList.add("hidden");
   resultCrest.classList.remove("hidden");
@@ -913,7 +924,7 @@ function updateResultImage(character) {
   resultImage.onload = null;
   resultImage.onerror = null;
 
-  if (!character.image) {
+  if (!embeddedImage) {
     resultImageFallback.classList.remove("hidden");
     return;
   }
@@ -930,7 +941,7 @@ function updateResultImage(character) {
     resultCrest.classList.remove("hidden");
   };
 
-  resultImage.src = character.image;
+  resultImage.src = embeddedImage;
   resultImage.alt = `Портрет персонажа ${character.name}`;
 }
 
