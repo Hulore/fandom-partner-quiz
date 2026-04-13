@@ -6,10 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0"
     />
-    <title>Кто твой парень из One Piece?</title>
+    <title>Кто твой парень из фандома?</title>
     <meta
       name="description"
-      content="Фановый опросник по One Piece с ИИ-историей любви на основе твоего результата."
+      content="Фановый мультифандомный опросник с ИИ-историей любви на основе твоего результата."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -25,15 +25,14 @@
         <p class="eyebrow">Fan Romance Quiz</p>
         <div class="hero-grid">
           <section class="hero-copy">
-            <h1>Кто твой парень из One Piece?</h1>
+            <h1>Кто твой парень из фандома?</h1>
             <p class="hero-text">
-              Пройди короткий тест, узнай свой мэтч и получи мини-историю о
-              вашем знакомстве, любви, общей жизни и тихом финале длиной в
-              целую судьбу.
+              Выбери фандом, оцени 10 случайных утверждений по шкале согласия
+              и получи ИИ-историю о вашем знакомстве, отношениях и общей жизни.
             </p>
             <div class="hero-tags">
-              <span>6 взрослых персонажей</span>
-              <span>20 социальных вопросов</span>
+              <span>6 фандомов</span>
+              <span>10 вопросов из банка 100</span>
               <span>ИИ-история на 400-600 слов</span>
             </div>
           </section>
@@ -42,11 +41,11 @@
             <ul class="hero-list">
               <li>Романтичный, но аккуратный тон без откровенных сцен</li>
               <li>Матч по вайбу, а не случайная выдача</li>
-              <li>История на русском языке под твои ответы</li>
+              <li>История учитывает выбранный фандом и проценты согласия</li>
             </ul>
             <p class="hero-note">
-              Неофициальный фан-проект. В подборе участвуют только взрослые
-              персонажи.
+              Неофициальный фан-проект. Для фандомов со школьниками используется
+              взрослый AU-тон, без откровенного контента.
             </p>
           </aside>
         </div>
@@ -59,11 +58,16 @@
               <p class="panel-kicker">Шаг 1</p>
               <h2>Расскажи немного о себе</h2>
             </div>
-            <p class="panel-meta">20 вопросов про общение, границы и стиль жизни</p>
+            <p class="panel-meta">10 шкал: от 0% до 100%</p>
           </div>
 
           <form id="quiz-form" novalidate>
             <div class="profile-grid">
+              <fieldset class="fandom-field">
+                <legend>Выбери фандом</legend>
+                <div id="fandom-options" class="fandom-grid"></div>
+              </fieldset>
+
               <label class="field">
                 <span>Как тебя назвать в истории?</span>
                 <input
@@ -89,7 +93,7 @@
 
             <div class="question-progress">
               <div class="question-progress-head">
-                <p class="panel-kicker">Шаг 1 из 20</p>
+                <p class="panel-kicker">Шаг 1 из 10</p>
                 <p id="question-progress-text" class="question-progress-text"></p>
               </div>
               <div class="question-progress-bar" aria-hidden="true">

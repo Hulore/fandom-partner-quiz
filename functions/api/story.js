@@ -66,9 +66,12 @@ export async function onRequestPost(context) {
 
   const participantName = sanitizeName(body.participantName);
   const resultId = typeof body.resultId === "string" ? body.resultId : "";
+  const fandomName = sanitizeLine(body.fandomName) || "выбранного фандома";
+  const fandomWorld = sanitizeLine(body.fandomWorld) || "атмосфера выбранного фандома";
+  const bodyResult = sanitizeResult(body.result);
   const answers = sanitizeAnswers(body.answers);
   const visitorId = sanitizeVisitorId(body.visitorId);
-  const character = CHARACTER_GUIDES[resultId];
+  const character = bodyResult || CHARACTER_GUIDES[resultId];
 
   if (!character) {
     return jsonResponse({ error: "Не удалось определить персонажа." }, 400);
@@ -93,7 +96,7 @@ export async function onRequestPost(context) {
     )
     .join("\n\n");
 
-  const promptContext = buildPromptContext(character, protagonist, answerSummary);
+  const promptContext = buildPromptContext(character, protagonist, answerSummary, fandomName, fandomWorld);
   const model = env.OPENAI_MODEL || "gpt-5-mini";
 
   const primaryAttempt = await requestStructuredStory({
@@ -152,20 +155,40 @@ function sanitizeVisitorId(value) {
   return value.replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 64) || "anonymous-visitor";
 }
 
-function sanitizeAnswers(value) {
-  if (!Array.isArray(value)) {
-    return [];
+function sanitizeResult(value) {
+  if (!value || typeof value !== "object") {
+    return null;
   }
 
-  return value
-    .slice(0, 20)
+  const name = sanitizeLine(value.name);
+  const flavor = sanitizeLine(value.promptFlavor || value.subtitle);
+
+  if (!name || !flavor) {
+    return null;
+  }
+
+  return { name, flavor };
+}
+
+function sanitizeAnswers(value) {
+  const rawAnswers = Array.isArray(value)
+    ? value
+    : value && typeof value === "object"
+      ? Object.values(value)
+      : [];
+
+  return rawAnswers
+    .slice(0, 10)
     .map((entry) => {
       const source = entry && typeof entry === "object" ? entry : {};
+      const percent = Number(source.percent);
 
       return {
-        question: sanitizeLine(source.question),
-        answer: sanitizeLine(source.answer),
-        vibe: sanitizeLine(source.vibe),
+        question: sanitizeLine(source.statement || source.question),
+        answer: Number.isFinite(percent)
+          ? `${Math.max(0, Math.min(100, Math.round(percent)))}% согласия`
+          : sanitizeLine(source.answer),
+        vibe: sanitizeLine(source.meaning || source.vibe || source.category),
       };
     })
     .filter((entry) => entry.question && entry.answer);
@@ -179,13 +202,15 @@ function sanitizeLine(value) {
   return value.replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
-function buildPromptContext(character, protagonist, answerSummary) {
-  return `Создай историю для фановского опросника "Кто твой парень из One Piece?".
+function buildPromptContext(character, protagonist, answerSummary, fandomName, fandomWorld) {
+  return `Создай историю для фановского опросника "Кто твой парень из фандома?".
 
+Фандом: ${fandomName}
+Атмосфера мира: ${fandomWorld}
 Главный романтический мэтч: ${character.name}
 Описание его вайба: ${character.flavor}
 Имя участницы или участника в истории: ${protagonist}
-Это результат большого теста о социальных привычках, стиле общения, границах и том, как человек живёт рядом с другими людьми.
+Это результат теста со шкалами согласия от 0% до 100%. История должна учитывать не только персонажа, но и конкретные проценты ответов участника.
 
 Ответы участника:
 ${answerSummary}
@@ -199,7 +224,7 @@ ${answerSummary}
 - Заверши историю ощущением целой прожитой жизни.
 - Используй имя естественно, без сухого перечисления.
 - Тон должен быть романтичным, взрослым, нежным и атмосферным.
-- Добавь конкретные чувственные детали мира: море, ветер, корабли, порт, огни, кухня, дерево палубы или что-то подобное.
+- Добавь конкретные чувственные детали именно выбранного фандома и его мира.
 - Не делай историю слишком сахарной: пусть будет живой и правдоподобной.
 - Не включай других пейрингов, ревности и explicit-контента.`;
 }
