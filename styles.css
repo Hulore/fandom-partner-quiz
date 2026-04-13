@@ -542,6 +542,11 @@ input[type="range"] {
 }
 
 .result-card {
+  --rarity-border: rgba(20, 33, 45, 0.1);
+  --rarity-glow: rgba(20, 33, 45, 0.18);
+  --rarity-edge: linear-gradient(135deg, rgba(20, 33, 45, 0.18), rgba(20, 33, 45, 0.06));
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(220px, 240px) minmax(0, 1fr);
   align-items: start;
@@ -553,18 +558,122 @@ input[type="range"] {
   border: 1px solid rgba(20, 33, 45, 0.1);
 }
 
+.result-card::before {
+  position: absolute;
+  z-index: 0;
+  inset: -1px;
+  border-radius: inherit;
+  background: var(--rarity-edge);
+  opacity: 0.32;
+  content: "";
+  pointer-events: none;
+}
+
+.result-card::after {
+  position: absolute;
+  z-index: 0;
+  inset: 10px;
+  border-radius: 22px;
+  background: var(--rarity-glow);
+  filter: blur(34px);
+  opacity: 0.38;
+  content: "";
+  pointer-events: none;
+}
+
+.result-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.result-card.rarity-sss {
+  --rarity-border: rgba(255, 236, 105, 0.92);
+  --rarity-glow: rgba(255, 214, 80, 0.62);
+  --rarity-edge: linear-gradient(120deg, #fff46b 0%, #ffd84f 34%, #ffb7d8 70%, #fff46b 100%);
+  border-color: rgba(255, 229, 95, 0.78);
+  box-shadow: 0 24px 60px rgba(255, 203, 64, 0.25), 0 0 32px rgba(255, 180, 216, 0.2);
+}
+
+.result-card.rarity-s {
+  --rarity-border: rgba(255, 220, 72, 0.9);
+  --rarity-glow: rgba(255, 212, 70, 0.56);
+  --rarity-edge: linear-gradient(120deg, #fff06b, #ffca3a, #fff6a8);
+  border-color: rgba(255, 208, 66, 0.72);
+  box-shadow: 0 24px 58px rgba(255, 198, 56, 0.22);
+}
+
+.result-card.rarity-a {
+  --rarity-border: rgba(174, 112, 255, 0.86);
+  --rarity-glow: rgba(160, 93, 255, 0.46);
+  --rarity-edge: linear-gradient(120deg, #b56cff, #7d5cff, #e0c2ff);
+  border-color: rgba(166, 108, 255, 0.68);
+  box-shadow: 0 24px 58px rgba(137, 86, 255, 0.2);
+}
+
+.result-card.rarity-b {
+  --rarity-border: rgba(96, 185, 255, 0.86);
+  --rarity-glow: rgba(69, 170, 255, 0.42);
+  --rarity-edge: linear-gradient(120deg, #63c7ff, #357dff, #b8edff);
+  border-color: rgba(87, 178, 255, 0.68);
+  box-shadow: 0 24px 58px rgba(55, 139, 255, 0.18);
+}
+
+.result-card.rarity-c {
+  --rarity-border: rgba(91, 224, 144, 0.86);
+  --rarity-glow: rgba(67, 216, 126, 0.4);
+  --rarity-edge: linear-gradient(120deg, #77f0a2, #28bc74, #c9ffd7);
+  border-color: rgba(88, 213, 137, 0.66);
+  box-shadow: 0 24px 58px rgba(51, 171, 106, 0.17);
+}
+
 .result-visual {
   position: relative;
+  isolation: isolate;
   width: 100%;
   min-width: 0;
 }
 
+.result-visual::before,
+.result-visual::after {
+  position: absolute;
+  inset: -9px;
+  border-radius: 34px;
+  background: var(--rarity-edge);
+  content: "";
+  pointer-events: none;
+}
+
+.result-visual::before {
+  z-index: 0;
+  filter: blur(18px);
+  opacity: 0.78;
+}
+
+.result-visual::after {
+  z-index: 2;
+  padding: 2px;
+  opacity: 0.92;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+.result-card.rarity-sss .result-visual::before,
+.result-card.rarity-sss .result-visual::after {
+  background-size: 220% 220%;
+  animation: rarity-flow 3.8s linear infinite;
+}
+
 .result-crest {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 100%;
   aspect-ratio: 4 / 5;
   border-radius: 28px;
+  border: 1px solid var(--rarity-border);
   background:
     linear-gradient(135deg, var(--accent), #12364d);
   color: #fff7ed;
@@ -572,16 +681,18 @@ input[type="range"] {
   font-size: 3rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  box-shadow: 0 18px 30px rgba(20, 33, 45, 0.2);
+  box-shadow: 0 18px 30px rgba(20, 33, 45, 0.2), 0 0 28px var(--rarity-glow);
 }
 
 .result-image,
 .result-image-fallback {
+  position: relative;
+  z-index: 1;
   width: 100%;
   aspect-ratio: 4 / 5;
   border-radius: 28px;
-  border: 1px solid rgba(20, 33, 45, 0.1);
-  box-shadow: 0 18px 30px rgba(20, 33, 45, 0.18);
+  border: 1px solid var(--rarity-border);
+  box-shadow: 0 18px 30px rgba(20, 33, 45, 0.18), 0 0 28px var(--rarity-glow);
 }
 
 .result-image {
@@ -664,6 +775,23 @@ input[type="range"] {
 
 .hidden {
   display: none !important;
+}
+
+@keyframes rarity-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 220% 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result-card.rarity-sss .result-visual::before,
+  .result-card.rarity-sss .result-visual::after {
+    animation: none;
+  }
 }
 
 @media (max-width: 980px) {

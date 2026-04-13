@@ -1,6 +1,45 @@
 ﻿const DIMENSIONS = ["stability", "romance", "chaos", "depth", "humor", "ambition", "freedom", "care", "drama", "nerd"];
 const profile = (values) => Object.fromEntries(DIMENSIONS.map((key, index) => [key, values[index] || 0]));
-const ch = (id, name, crest, imageKey, subtitle, flavor, traits, values) => ({ id, name, crest, imageKey, subtitle, description: flavor, promptFlavor: flavor, traits, profile: profile(values) });
+const CHARACTER_RARITIES = {
+  one_piece_zoro: "SSS",
+  one_piece_sanji: "SSS",
+  one_piece_law: "SSS",
+  one_piece_ace: "S",
+  one_piece_shanks: "S",
+  one_piece_sabo: "S",
+  jjk_gojo: "SSS",
+  jjk_geto: "S",
+  jjk_choso: "A",
+  jjk_nanami: "A",
+  jjk_toji: "A",
+  jjk_higuruma: "B",
+  mha_aizawa: "SSS",
+  mha_hawks: "S",
+  mha_best_jeanist: "B",
+  mha_present_mic: "B",
+  mha_fatgum: "C",
+  mha_nighteye: "C",
+  naruto_itachi: "SSS",
+  naruto_kakashi: "SSS",
+  naruto_shikamaru: "S",
+  naruto_gaara: "S",
+  naruto_iruka: "B",
+  naruto_yamato: "C",
+  p5_ren: "SSS",
+  p5_akechi: "SSS",
+  p5_yusuke: "S",
+  p5_ryuji: "A",
+  p5_maruki: "A",
+  p5_iwai: "B",
+  bg3_astarion: "SSS",
+  bg3_gale: "SSS",
+  bg3_halsin: "A",
+  bg3_wyll: "A",
+  bg3_rolan: "B",
+  bg3_dammon: "B",
+};
+const RARITY_CLASSES = ["rarity-sss", "rarity-s", "rarity-a", "rarity-b", "rarity-c"];
+const ch = (id, name, crest, imageKey, subtitle, flavor, traits, values) => ({ id, name, crest, imageKey, rarity: CHARACTER_RARITIES[id] || "C", subtitle, description: flavor, promptFlavor: flavor, traits, profile: profile(values) });
 const fandom = (id, label, note, storyWorld, characters) => ({ id, label, note, storyWorld, characters });
 
 const FANDOMS = {
@@ -88,6 +127,7 @@ const storyText = document.querySelector("#story-text");
 const resultImage = document.querySelector("#result-image");
 const resultImageFallback = document.querySelector("#result-image-fallback");
 const resultCrest = document.querySelector("#result-crest");
+const resultCard = document.querySelector("#result-card");
 const progressText = document.querySelector("#question-progress-text");
 const progressFill = document.querySelector("#question-progress-fill");
 const participantNameInput = document.querySelector("#participantName");
@@ -305,14 +345,22 @@ function buildStoryAnswers(answersById) {
 }
 
 function updateResultPanel(character, answers) {
+  applyResultRarity(character);
   resultCrest.textContent = character.crest;
   document.querySelector("#result-name").textContent = character.name;
   document.querySelector("#result-subtitle").textContent = character.subtitle;
   document.querySelector("#result-description").textContent = character.description;
   document.querySelector("#result-traits").innerHTML = character.traits.map((trait) => `<span>${trait}</span>`).join("");
   updateResultImage(character);
-  document.querySelector("#result-label").textContent = `Твой мэтч · ${state.fandom.label}`;
+  document.querySelector("#result-label").textContent = `Твой мэтч · ${state.fandom.label} · Редкость ${character.rarity}`;
   storyStatus.textContent = "Совпадение собрано. Можно сгенерировать личную историю по твоему вайбу.";
+}
+
+function applyResultRarity(character) {
+  const rarity = CHARACTER_RARITIES[character.id] || "C";
+  resultCard.classList.remove(...RARITY_CLASSES);
+  resultCard.classList.add(`rarity-${rarity.toLowerCase()}`);
+  resultCard.dataset.rarity = rarity;
 }
 
 function updateResultImage(character) {
