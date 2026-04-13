@@ -549,6 +549,7 @@ input[type="range"] {
   isolation: isolate;
   display: grid;
   grid-template-columns: minmax(220px, 240px) minmax(0, 1fr);
+  gap: 34px;
   align-items: start;
   padding: 20px;
   margin-top: 14px;
@@ -835,6 +836,7 @@ input[type="range"] {
   }
 
   .result-card {
+    gap: 26px;
     grid-template-columns: minmax(0, 1fr);
   }
 
