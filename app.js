@@ -154,7 +154,7 @@ generateButton.addEventListener("click", async () => {
         fandomName: state.fandom.label,
         fandomWorld: state.fandom.storyWorld,
         result: { id: state.result.id, name: state.result.name, subtitle: state.result.subtitle, promptFlavor: state.result.promptFlavor, traits: state.result.traits },
-        answers: state.answers,
+        answers: buildStoryAnswers(state.answers),
         visitorId: getVisitorId(),
       }),
     });
@@ -295,6 +295,15 @@ function scoreCharacter(vector, profile) {
   return DIMENSIONS.reduce((sum, dimension) => sum + vector[dimension] * (profile[dimension] || 0), 0);
 }
 
+function buildStoryAnswers(answersById) {
+  return Object.values(answersById).map((answer) => ({
+    id: answer.id,
+    category: answer.category,
+    percent: answer.percent,
+    meaning: answer.meaning,
+  }));
+}
+
 function updateResultPanel(character, answers) {
   resultCrest.textContent = character.crest;
   document.querySelector("#result-name").textContent = character.name;
@@ -302,9 +311,8 @@ function updateResultPanel(character, answers) {
   document.querySelector("#result-description").textContent = character.description;
   document.querySelector("#result-traits").innerHTML = character.traits.map((trait) => `<span>${trait}</span>`).join("");
   updateResultImage(character);
-  const answerHighlights = answers.slice(0, 3).map((entry) => `${entry.percent}% · ${entry.statement}`).join(" • ");
   document.querySelector("#result-label").textContent = `Твой мэтч · ${state.fandom.label}`;
-  storyStatus.textContent = `Совпадение собрано по шкалам: ${answerHighlights}`;
+  storyStatus.textContent = "Совпадение собрано. Можно сгенерировать личную историю по твоему вайбу.";
 }
 
 function updateResultImage(character) {

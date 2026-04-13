@@ -89,14 +89,9 @@ export async function onRequestPost(context) {
   }
 
   const protagonist = participantName;
-  const answerSummary = answers
-    .map(
-      (entry, index) =>
-        `${index + 1}. ${entry.question}\nОтвет: ${entry.answer}\nОттенок вайба: ${entry.vibe}`,
-    )
-    .join("\n\n");
+  const answerProfile = buildAnswerProfile(answers);
 
-  const promptContext = buildPromptContext(character, protagonist, answerSummary, fandomName, fandomWorld);
+  const promptContext = buildPromptContext(character, protagonist, answerProfile, fandomName, fandomWorld);
   const model = env.OPENAI_MODEL || "gpt-5-mini";
 
   const primaryAttempt = await requestStructuredStory({
@@ -182,16 +177,17 @@ function sanitizeAnswers(value) {
     .map((entry) => {
       const source = entry && typeof entry === "object" ? entry : {};
       const percent = Number(source.percent);
+      const normalizedPercent = Number.isFinite(percent)
+        ? Math.max(0, Math.min(100, Math.round(percent)))
+        : null;
 
       return {
-        question: sanitizeLine(source.statement || source.question),
-        answer: Number.isFinite(percent)
-          ? `${Math.max(0, Math.min(100, Math.round(percent)))}% согласия`
-          : sanitizeLine(source.answer),
+        category: sanitizeLine(source.category),
+        percent: normalizedPercent,
         vibe: sanitizeLine(source.meaning || source.vibe || source.category),
       };
     })
-    .filter((entry) => entry.question && entry.answer);
+    .filter((entry) => entry.percent !== null);
 }
 
 function sanitizeLine(value) {
@@ -202,18 +198,67 @@ function sanitizeLine(value) {
   return value.replace(/\s+/g, " ").trim().slice(0, 180);
 }
 
-function buildPromptContext(character, protagonist, answerSummary, fandomName, fandomWorld) {
-  return `Создай историю для фановского опросника "Кто твой парень из фандома?".
+function buildAnswerProfile(answers) {
+  const categoryGuides = {
+    fun: {
+      high: "легко впускает в жизнь игривый хаос, забавные авантюры и совместные глупости",
+      mid: "любит юмор, но без постоянного цирка вокруг отношений",
+      low: "скорее тянется к спокойному ритму и шуткам, которые не ломают ощущение безопасности",
+    },
+    relationship: {
+      high: "хочет зрелой близости: честных разговоров, уважения границ и поступков вместо пустой драмы",
+      mid: "ищет баланс между романтикой, свободой и бытовой надёжностью",
+      low: "не любит давление и раскрывается медленно, когда рядом достаточно бережности",
+    },
+    memes: {
+      high: "воспринимает юмор и внутренние шутки как один из языков нежности",
+      mid: "ценит лёгкость в общении, если за ней остаётся настоящая внимательность",
+      low: "скорее верит в тихие жесты и прямые слова, чем в постоянную мемную переписку",
+    },
+    interests: {
+      high: "оживает от общих интересов, атмосферных мест, маленьких ритуалов и любопытства друг к другу",
+      mid: "любит, когда отношения растут из обычных разговоров, дел и совпавших вкусов",
+      low: "больше ценит простую человеческую близость, чем яркие увлечения или эффектные жесты",
+    },
+    social: {
+      high: "хорошо чувствует себя в партнёрстве, где есть команда, друзья и живой обмен с миром",
+      mid: "держит баланс между общением и личным пространством",
+      low: "бережёт внутренний круг и сильнее раскрывается в тихой приватной близости",
+    },
+  };
+
+  const buckets = answers.reduce((acc, answer) => {
+    const category = categoryGuides[answer.category] ? answer.category : "social";
+    acc[category] = acc[category] || [];
+    acc[category].push(answer.percent);
+    return acc;
+  }, {});
+
+  return Object.entries(categoryGuides)
+    .map(([category, guide]) => {
+      const values = buckets[category] || [];
+      const average = values.length
+        ? values.reduce((sum, value) => sum + value, 0) / values.length
+        : 50;
+
+      if (average >= 65) return guide.high;
+      if (average <= 35) return guide.low;
+      return guide.mid;
+    })
+    .join("; ");
+}
+
+function buildPromptContext(character, protagonist, answerProfile, fandomName, fandomWorld) {
+  return `Создай короткий романтический фанфик по выбранному мэтчу.
 
 Фандом: ${fandomName}
 Атмосфера мира: ${fandomWorld}
 Главный романтический мэтч: ${character.name}
 Описание его вайба: ${character.flavor}
 Имя участницы или участника в истории: ${protagonist}
-Это результат теста со шкалами согласия от 0% до 100%. История должна учитывать не только персонажа, но и конкретные проценты ответов участника.
 
-Ответы участника:
-${answerSummary}
+Скрытые ориентиры для автора:
+${answerProfile}
 
 Требования:
 - Напиши цельную историю на 400-600 слов.
@@ -226,6 +271,10 @@ ${answerSummary}
 - Тон должен быть романтичным, взрослым, нежным и атмосферным.
 - Добавь конкретные чувственные детали именно выбранного фандома и его мира.
 - Не делай историю слишком сахарной: пусть будет живой и правдоподобной.
+- Не упоминай тест, вопросы, ответы, шкалы, проценты, категории и любые формулировки из опросника.
+- Не пересказывай ориентиры напрямую. Используй их только скрыто: через выбор сцен, реакции, диалоги и динамику отношений.
+- Пиши как личный фанфик с плавным сюжетом, а не как психологический отчёт или набор фактов.
+- Добавь 1-2 коротких диалога или реплики, чтобы история звучала живее.
 - Не включай других пейрингов, ревности и explicit-контента.`;
 }
 
@@ -237,7 +286,7 @@ async function requestStructuredStory({ apiKey, model, visitorId, promptContext 
       verbosity: "medium",
       format: {
         type: "json_schema",
-        name: "onepiece_romance_story",
+        name: "fandom_romance_story",
         strict: true,
         schema: {
           type: "object",
@@ -262,6 +311,10 @@ async function requestStructuredStory({ apiKey, model, visitorId, promptContext 
 
   const story = extractStoryObject(result.data);
   if (story) {
+    if (storyHasTestArtifacts(story)) {
+      return { error: "История получилась слишком похожей на пересказ теста, пробую перегенерировать." };
+    }
+
     return { story };
   }
 
@@ -288,7 +341,7 @@ async function requestFallbackStory({ apiKey, model, visitorId, promptContext })
           {
             type: "input_text",
             text:
-              'Верни ответ строго в JSON без markdown и без пояснений. Формат: {"title":"...","intro":"...","story":"..."}',
+              'Верни ответ строго в JSON без markdown и без пояснений. Формат: {"title":"...","intro":"...","story":"..."}. Это повторная попытка: не упоминай тест, вопросы, ответы, шкалы, проценты, категории и не пересказывай входные ориентиры напрямую.',
           },
         ],
       },
@@ -302,6 +355,10 @@ async function requestFallbackStory({ apiKey, model, visitorId, promptContext })
 
   const story = extractStoryObject(result.data);
   if (story) {
+    if (storyHasTestArtifacts(story)) {
+      return { error: "OpenAI снова вернул историю с прямыми следами теста. Попробуй сгенерировать ещё раз." };
+    }
+
     return { story };
   }
 
@@ -320,7 +377,7 @@ function buildBaseInput(promptContext) {
         {
           type: "input_text",
           text:
-            "Ты пишешь короткие романтические фан-истории по мотивам One Piece на русском языке. Пиши тепло, художественно и легко читаемо. Сюжет должен пройти путь от знакомства к отношениям, совместной жизни и тихому финалу в старости или в конце жизни. Финал может быть bittersweet, но без графичной смерти, жестокости и без трагедии ради трагедии. Никакой эротики: тон PG-13, чувственно, но без откровенных сцен. Сохраняй узнаваемый характер персонажа, но допускай мягкую романтическую AU-атмосферу. Не упоминай, что ты ИИ, не вставляй дисклеймеры, не используй списки.",
+            "Ты пишешь короткие романтические фан-истории на русском языке. Пиши художественно: сцены, действия, детали, немного диалога и плавная эмоциональная дуга. Это должен быть личный фанфик, а не анкета, отчёт или пересказ входных данных. Сюжет проходит путь от знакомства к отношениям, совместной жизни и тихому финалу в старости или в конце жизни. Финал может быть bittersweet, но без графичной смерти, жестокости и без трагедии ради трагедии. Никакой эротики: тон PG-13, чувственно, но без откровенных сцен. Сохраняй узнаваемый характер персонажа, но допускай мягкую романтическую AU-атмосферу. Не упоминай тесты, вопросы, ответы, проценты, категории, ИИ, дисклеймеры и не используй списки.",
         },
       ],
     },
@@ -463,6 +520,11 @@ function normalizeStory(story) {
     intro: story.intro.trim(),
     story: story.story.trim(),
   };
+}
+
+function storyHasTestArtifacts(story) {
+  const text = `${story.title}\n${story.intro}\n${story.story}`.toLocaleLowerCase("ru");
+  return /(\d{1,3}\s?%|процент|шкал|опросник|анкет|результат тест|(?:^|[^а-яё])тест(?:[^а-яё]|$)|вопрос[а-яё\s-]{0,24}тест|ответ[а-яё\s-]{0,24}участник|согласия с утвержден)/iu.test(text);
 }
 
 function ensureNamePresence(story, participantName, characterName) {
