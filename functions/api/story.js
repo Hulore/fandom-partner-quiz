@@ -31,6 +31,9 @@ const CHARACTER_GUIDES = {
   },
 };
 
+const STORY_MAX_OUTPUT_TOKENS = 3200;
+const COMPACT_STORY_MAX_OUTPUT_TOKENS = 2200;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -122,7 +125,34 @@ export async function onRequestPost(context) {
     );
   }
 
+  let compactAttempt = null;
+  if (isOutputLimitError(primaryAttempt.error) || isOutputLimitError(fallbackAttempt.error)) {
+    const compactPromptContext = buildPromptContext(
+      character,
+      protagonist,
+      answerProfile,
+      fandomName,
+      fandomWorld,
+      { compact: true },
+    );
+    compactAttempt = await requestFallbackStory({
+      apiKey: env.OPENAI_API_KEY,
+      model,
+      visitorId,
+      promptContext: compactPromptContext,
+      maxOutputTokens: COMPACT_STORY_MAX_OUTPUT_TOKENS,
+    });
+
+    if (compactAttempt.story) {
+      return jsonResponse(
+        { story: ensureNamePresence(compactAttempt.story, participantName, character.name) },
+        200,
+      );
+    }
+  }
+
   const finalError =
+    (compactAttempt && compactAttempt.error) ||
     fallbackAttempt.error ||
     primaryAttempt.error ||
     "Не удалось получить историю от OpenAI. Попробуй ещё раз через минуту.";
@@ -248,7 +278,12 @@ function buildAnswerProfile(answers) {
     .join("; ");
 }
 
-function buildPromptContext(character, protagonist, answerProfile, fandomName, fandomWorld) {
+function buildPromptContext(character, protagonist, answerProfile, fandomName, fandomWorld, options = {}) {
+  const wordTarget = options.compact ? "320-430" : "400-520";
+  const compactInstruction = options.compact
+    ? "\n- Это короткая повторная попытка после обрыва по длине: держи текст плотным, без лишних пояснений и без длинных внутренних монологов."
+    : "";
+
   return `Создай короткий романтический фанфик по выбранному мэтчу.
 
 Фандом: ${fandomName}
@@ -261,7 +296,7 @@ function buildPromptContext(character, protagonist, answerProfile, fandomName, f
 ${answerProfile}
 
 Требования:
-- Напиши цельную историю на 400-600 слов.
+- Напиши цельную историю на ${wordTarget} слов.
 - Обязательно используй имя участника "${protagonist}" в самой истории и не меньше трёх раз по ходу текста.
 - Начни с первой встречи.
 - Покажи, как симпатия растёт в отношения.
@@ -275,13 +310,19 @@ ${answerProfile}
 - Не пересказывай ориентиры напрямую. Используй их только скрыто: через выбор сцен, реакции, диалоги и динамику отношений.
 - Пиши как личный фанфик с плавным сюжетом, а не как психологический отчёт или набор фактов.
 - Добавь 1-2 коротких диалога или реплики, чтобы история звучала живее.
-- Не включай других пейрингов, ревности и explicit-контента.`;
+- Не включай других пейрингов, ревности и explicit-контента.${compactInstruction}`;
 }
 
-async function requestStructuredStory({ apiKey, model, visitorId, promptContext }) {
+async function requestStructuredStory({
+  apiKey,
+  model,
+  visitorId,
+  promptContext,
+  maxOutputTokens = STORY_MAX_OUTPUT_TOKENS,
+}) {
   const payload = {
     model,
-    max_output_tokens: 1800,
+    max_output_tokens: maxOutputTokens,
     text: {
       verbosity: "medium",
       format: {
@@ -325,10 +366,16 @@ async function requestStructuredStory({ apiKey, model, visitorId, promptContext 
   };
 }
 
-async function requestFallbackStory({ apiKey, model, visitorId, promptContext }) {
+async function requestFallbackStory({
+  apiKey,
+  model,
+  visitorId,
+  promptContext,
+  maxOutputTokens = STORY_MAX_OUTPUT_TOKENS,
+}) {
   const payload = {
     model,
-    max_output_tokens: 1800,
+    max_output_tokens: maxOutputTokens,
     text: {
       verbosity: "medium",
     },
@@ -525,6 +572,10 @@ function normalizeStory(story) {
 function storyHasTestArtifacts(story) {
   const text = `${story.title}\n${story.intro}\n${story.story}`.toLocaleLowerCase("ru");
   return /(\d{1,3}\s?%|процент|шкал|опросник|анкет|результат тест|(?:^|[^а-яё])тест(?:[^а-яё]|$)|вопрос[а-яё\s-]{0,24}тест|ответ[а-яё\s-]{0,24}участник|согласия с утвержден)/iu.test(text);
+}
+
+function isOutputLimitError(error) {
+  return typeof error === "string" && error.includes("лимита длины");
 }
 
 function ensureNamePresence(story, participantName, characterName) {
