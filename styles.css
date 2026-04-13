@@ -586,7 +586,8 @@ input[type="range"] {
 
 .result-image {
   display: block;
-  object-fit: cover;
+  object-fit: contain;
+  padding: 8px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(230, 209, 170, 0.7));
 }
