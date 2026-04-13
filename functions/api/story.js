@@ -341,12 +341,13 @@ function sanitizeResult(value) {
 
   const name = sanitizeLine(value.name);
   const flavor = sanitizeLine(value.promptFlavor || value.subtitle);
+  const gender = ["boy", "girl"].includes(value.gender) ? value.gender : "unknown";
 
   if (!name || !flavor) {
     return null;
   }
 
-  return { name, flavor };
+  return { name, flavor, gender };
 }
 
 function sanitizeAnswers(value) {
@@ -447,7 +448,8 @@ function buildPromptContext(character, protagonist, answerProfile, fandomName, f
 Фандом: ${fandomName}
 Атмосфера мира: ${fandomWorld}
 Главный романтический мэтч: ${character.name}
-Описание его вайба: ${character.flavor}
+Тип мэтча: ${describeCharacterGender(character.gender)}
+Описание вайба персонажа: ${character.flavor}
 Имя участницы или участника в истории: ${protagonist}
 
 Скрытые ориентиры для автора:
@@ -476,6 +478,18 @@ function pickRandomItems(items, count) {
   }
 
   return picked;
+}
+
+function describeCharacterGender(gender) {
+  if (gender === "girl") {
+    return "женский персонаж; романтическая история с ней";
+  }
+
+  if (gender === "boy") {
+    return "мужской персонаж; романтическая история с ним";
+  }
+
+  return "персонаж; романтическая история с ним или с ней по контексту";
 }
 
 async function requestStructuredStory({
