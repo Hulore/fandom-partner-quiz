@@ -21,54 +21,85 @@
   </head>
   <body>
     <div class="page-shell">
-      <header class="hero">
-        <p class="eyebrow">Fan Romance Quiz</p>
-        <div class="hero-grid">
-          <section class="hero-copy">
-            <h1>Кто твой партнёр из фандома?</h1>
-            <p class="hero-text">
-              Выбери фандом, укажи, кто тебя интересует, оцени 10 случайных утверждений по шкале согласия
-              и получи ИИ-историю о вашем знакомстве, отношениях и общей жизни.
-            </p>
-            <div class="hero-tags">
-              <span>6 фандомов</span>
-              <span>Парни, девушки или все</span>
-              <span>10 вопросов из банка 300</span>
-              <span>ИИ-история на 400-600 слов</span>
+      <main id="app-shell" class="app-shell" aria-live="polite">
+        <div class="slide-progress" aria-hidden="true">
+          <span class="slide-dot active"></span>
+          <span class="slide-dot"></span>
+          <span class="slide-dot"></span>
+          <span class="slide-dot"></span>
+          <span class="slide-dot"></span>
+          <span class="slide-dot"></span>
+          <span class="slide-dot"></span>
+        </div>
+
+        <section id="slide-intro" class="slide hero-slide active" data-slide="intro">
+          <p class="eyebrow">Fan Romance Quiz</p>
+          <div class="hero-grid">
+            <section class="hero-copy">
+              <h1>Кто твой партнёр из фандома?</h1>
+              <p class="hero-text">
+                Выбери фандом и тип романтического мэтча, ответь на 10 случайных утверждений
+                и получи персонажа, который ближе всего совпал с твоим вайбом.
+              </p>
+              <div class="hero-tags">
+                <span>6 фандомов</span>
+                <span>Парни, девушки или все</span>
+                <span>10 вопросов из банка 300</span>
+                <span>ИИ-история на 400-600 слов</span>
+              </div>
+              <button id="intro-next-button" class="primary-button hero-cta" type="button">
+                Начать опросник
+              </button>
+            </section>
+            <aside class="hero-card">
+              <p class="hero-card-kicker">Что внутри</p>
+              <ul class="hero-list">
+                <li>Мэтч по скрытым социальным и романтическим параметрам.</li>
+                <li>Случайные вопросы из большого банка для реиграбельности.</li>
+                <li>Редкость персонажа, светящаяся рамка и персональная ИИ-история.</li>
+              </ul>
+              <p class="hero-note">
+                Неофициальный фан-проект. Тон историй романтичный, но без откровенного контента.
+              </p>
+            </aside>
+          </div>
+        </section>
+
+        <form id="quiz-form" novalidate>
+          <section id="slide-fandom" class="slide panel" data-slide="fandom">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Слайд 2</p>
+                <h2>Выбери фандом</h2>
+              </div>
+              <p class="panel-meta">
+                Прогресс показывает долю персонажей этого фандома в текущем опроснике.
+              </p>
+            </div>
+
+            <fieldset class="fandom-field">
+              <legend>Фандомы</legend>
+              <div id="fandom-options" class="fandom-grid fandom-progress-grid"></div>
+            </fieldset>
+
+            <div class="slide-nav">
+              <button id="fandom-back-button" type="button" class="ghost-button">Назад</button>
+              <button id="fandom-next-button" type="button" class="primary-button">Дальше</button>
             </div>
           </section>
-          <aside class="hero-card">
-            <p class="hero-card-kicker">Что внутри</p>
-            <ul class="hero-list">
-              <li>Романтичный, но аккуратный тон без откровенных сцен</li>
-              <li>Матч по вайбу, а не случайная выдача</li>
-              <li>История учитывает выбранный фандом и общий вайб ответов</li>
-            </ul>
-            <p class="hero-note">
-              Неофициальный фан-проект. Для фандомов со школьниками используется
-              взрослый AU-тон, без откровенного контента.
-            </p>
-          </aside>
-        </div>
-      </header>
 
-      <main id="content-grid" class="content-grid">
-        <section id="quiz-panel" class="quiz-panel panel">
-          <div class="panel-head">
-            <div>
-              <p class="panel-kicker">Шаг 1</p>
-              <h2>Расскажи немного о себе</h2>
+          <section id="slide-profile" class="slide panel" data-slide="profile">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Слайд 3</p>
+                <h2>Расскажи о себе</h2>
+              </div>
+              <p class="panel-meta">
+                Это нужно для результата и персональной истории.
+              </p>
             </div>
-            <p class="panel-meta">10 шкал: от 0% до 100%</p>
-          </div>
 
-          <form id="quiz-form" novalidate>
             <div class="profile-grid">
-              <fieldset class="fandom-field">
-                <legend>Выбери фандом</legend>
-                <div id="fandom-options" class="fandom-grid"></div>
-              </fieldset>
-
               <fieldset class="fandom-field">
                 <legend>Кто тебя интересует?</legend>
                 <div id="interest-options" class="interest-grid"></div>
@@ -85,21 +116,27 @@
                   placeholder="Например, Алина"
                 />
               </label>
+            </div>
 
-              <label class="field checkbox-field">
-                <input
-                  id="ageConfirmed"
-                  name="ageConfirmed"
-                  type="checkbox"
-                  required
-                />
-                <span>Мне 18+ и я хочу романтическую, но не откровенную историю</span>
-              </label>
+            <div class="slide-nav">
+              <button id="profile-back-button" type="button" class="ghost-button">Назад</button>
+              <button id="profile-next-button" type="button" class="primary-button">К вопросам</button>
+            </div>
+            <p id="profile-message" class="form-message" aria-live="polite"></p>
+          </section>
+
+          <section id="quiz-panel" class="slide panel" data-slide="questions">
+            <div class="panel-head">
+              <div>
+                <p class="panel-kicker">Слайд 4</p>
+                <h2>Вопросы</h2>
+              </div>
+              <p class="panel-meta">10 шкал: от 0% до 100%</p>
             </div>
 
             <div class="question-progress">
               <div class="question-progress-head">
-                <p class="panel-kicker">Шаг 1 из 10</p>
+                <p class="panel-kicker">Вопрос</p>
                 <p id="question-progress-text" class="question-progress-text"></p>
               </div>
               <div class="question-progress-bar" aria-hidden="true">
@@ -118,13 +155,41 @@
               </button>
               <p id="form-message" class="form-message" aria-live="polite"></p>
             </div>
-          </form>
-        </section>
+          </section>
+        </form>
 
-        <section id="result-panel" class="result-panel panel hidden" aria-live="polite">
+        <section id="slide-reveal" class="slide panel reveal-slide" data-slide="reveal">
           <div class="panel-head">
             <div>
-              <p class="panel-kicker">Шаг 2</p>
+              <p class="panel-kicker">Слайд 5</p>
+              <h2>Мэтч найден</h2>
+            </div>
+          </div>
+
+          <div id="reveal-card" class="reveal-card">
+            <div class="reveal-card-inner">
+              <div class="reveal-card-face reveal-card-back">
+                <span>?</span>
+                <small>Переворачиваем карту</small>
+              </div>
+              <div class="reveal-card-face reveal-card-front">
+                <div class="result-visual reveal-visual">
+                  <div id="reveal-crest" class="result-crest">?</div>
+                  <img id="reveal-image" class="result-image hidden" src="" alt="" loading="lazy" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <p id="reveal-name" class="reveal-name"></p>
+          <button id="reveal-next-button" type="button" class="primary-button reveal-next-button">
+            Смотреть результат
+          </button>
+        </section>
+
+        <section id="result-panel" class="slide panel result-slide" data-slide="result" aria-live="polite">
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Слайд 6</p>
               <h2>Твой результат</h2>
             </div>
             <button id="restart-button" class="ghost-button" type="button">
@@ -132,7 +197,7 @@
             </button>
           </div>
 
-          <div id="result-card" class="result-card">
+          <div id="result-card" class="result-card result-card-compact">
             <div class="result-visual">
               <div class="result-crest" id="result-crest">?</div>
               <img
@@ -144,7 +209,7 @@
               />
               <div id="result-image-fallback" class="result-image-fallback hidden">
                 <p>Арт ещё не добавлен</p>
-                <small>Положи картинку в `assets/characters` и она появится здесь.</small>
+                <small>Положи картинку в assets/characters, и она появится здесь.</small>
               </div>
             </div>
             <div class="result-copy">
@@ -161,14 +226,17 @@
               Сгенерировать нашу историю
             </button>
             <p class="story-hint">
-              История создаётся после результата и учитывает твои ответы.
+              История создаётся после результата и учитывает фандом, мэтч и общий вайб ответов.
             </p>
           </div>
+          <p id="story-status" class="story-status" aria-live="polite"></p>
+        </section>
 
+        <section id="slide-story" class="slide panel story-slide" data-slide="story">
           <div id="story-box" class="story-box hidden">
             <div class="story-head">
               <div>
-                <p class="panel-kicker">Шаг 3</p>
+                <p class="panel-kicker">Слайд 7</p>
                 <h3 id="story-title">Ваша история</h3>
               </div>
               <button id="copy-button" class="ghost-button" type="button">
@@ -177,9 +245,11 @@
             </div>
             <p id="story-intro" class="story-intro"></p>
             <article id="story-text" class="story-text"></article>
+            <div class="slide-nav">
+              <button id="story-back-button" type="button" class="ghost-button">К результату</button>
+              <button id="story-restart-button" type="button" class="primary-button">Пройти заново</button>
+            </div>
           </div>
-
-          <p id="story-status" class="story-status" aria-live="polite"></p>
         </section>
       </main>
     </div>

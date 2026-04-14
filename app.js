@@ -198,9 +198,14 @@ const QUESTION_BANK = buildQuestionBank();
 const form = document.querySelector("#quiz-form");
 const questionRoot = document.querySelector("#quiz-questions");
 const formMessage = document.querySelector("#form-message");
-const quizPanel = document.querySelector("#quiz-panel");
-const contentGrid = document.querySelector("#content-grid");
-const resultPanel = document.querySelector("#result-panel");
+const slides = Array.from(document.querySelectorAll(".slide"));
+const slideDots = Array.from(document.querySelectorAll(".slide-dot"));
+const introNextButton = document.querySelector("#intro-next-button");
+const fandomBackButton = document.querySelector("#fandom-back-button");
+const fandomNextButton = document.querySelector("#fandom-next-button");
+const profileBackButton = document.querySelector("#profile-back-button");
+const profileNextButton = document.querySelector("#profile-next-button");
+const profileMessage = document.querySelector("#profile-message");
 const generateButton = document.querySelector("#generate-button");
 const restartButton = document.querySelector("#restart-button");
 const copyButton = document.querySelector("#copy-button");
@@ -215,21 +220,44 @@ const resultImage = document.querySelector("#result-image");
 const resultImageFallback = document.querySelector("#result-image-fallback");
 const resultCrest = document.querySelector("#result-crest");
 const resultCard = document.querySelector("#result-card");
+const revealCard = document.querySelector("#reveal-card");
+const revealImage = document.querySelector("#reveal-image");
+const revealCrest = document.querySelector("#reveal-crest");
+const revealName = document.querySelector("#reveal-name");
+const revealNextButton = document.querySelector("#reveal-next-button");
+const storyBackButton = document.querySelector("#story-back-button");
+const storyRestartButton = document.querySelector("#story-restart-button");
 const progressText = document.querySelector("#question-progress-text");
 const progressFill = document.querySelector("#question-progress-fill");
 const participantNameInput = document.querySelector("#participantName");
-const ageConfirmedInput = document.querySelector("#ageConfirmed");
 const fandomRoot = document.querySelector("#fandom-options");
 const interestRoot = document.querySelector("#interest-options");
-const state = { fandom: FANDOMS.one_piece, interest: "boy", result: null, answers: {}, story: null, questionOrder: [], currentQuestionIndex: 0 };
+const SLIDE_ORDER = ["intro", "fandom", "profile", "questions", "reveal", "result", "story"];
+const state = { fandom: FANDOMS.one_piece, interest: "boy", result: null, answers: {}, story: null, questionOrder: [], currentQuestionIndex: 0, currentSlide: "intro" };
 
 renderFandomOptions();
 renderInterestOptions();
 initializeQuiz();
 
+introNextButton.addEventListener("click", () => showSlide("fandom"));
+fandomBackButton.addEventListener("click", () => showSlide("intro", -1));
+fandomNextButton.addEventListener("click", () => showSlide("profile"));
+profileBackButton.addEventListener("click", () => showSlide("fandom", -1));
+profileNextButton.addEventListener("click", () => {
+  if (!validateProfile(profileMessage)) return;
+  initializeQuiz();
+  showSlide("questions");
+});
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
-  if (!validateProfile()) return;
+  if (state.currentSlide !== "questions") {
+    if (!validateProfile(profileMessage)) return;
+    initializeQuiz();
+    showSlide("questions");
+    return;
+  }
+  if (!validateProfile(formMessage)) return;
   persistCurrentAnswer();
   if (state.currentQuestionIndex < state.questionOrder.length - 1) {
     state.currentQuestionIndex += 1;
@@ -247,10 +275,9 @@ form.addEventListener("submit", (event) => {
   state.story = null;
   resetStoryUi();
   updateResultPanel(result.character, result.answers);
-  quizPanel.classList.add("hidden");
-  contentGrid.classList.add("result-mode");
-  resultPanel.classList.remove("hidden");
-  resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  updateRevealPanel(result.character);
+  showSlide("reveal");
+  playRevealAnimation();
 });
 
 questionRoot.addEventListener("input", (event) => {
@@ -262,10 +289,15 @@ questionRoot.addEventListener("input", (event) => {
 
 previousButton.addEventListener("click", () => {
   persistCurrentAnswer();
-  if (state.currentQuestionIndex === 0) return;
+  if (state.currentQuestionIndex === 0) {
+    showSlide("profile", -1);
+    return;
+  }
   state.currentQuestionIndex -= 1;
   renderCurrentQuestion();
 });
+
+revealNextButton.addEventListener("click", () => showSlide("result"));
 
 generateButton.addEventListener("click", async () => {
   if (!state.result) return;
@@ -295,7 +327,7 @@ generateButton.addEventListener("click", async () => {
     storyText.textContent = payload.story.story;
     storyBox.classList.remove("hidden");
     storyStatus.textContent = "История готова. Можно копировать или пройти тест ещё раз.";
-    storyBox.scrollIntoView({ behavior: "smooth", block: "start" });
+    showSlide("story");
   } catch (error) {
     storyStatus.textContent = error.message || "С генерацией что-то пошло не так. Проверь настройку OpenAI API на сервере.";
   } finally {
@@ -303,21 +335,23 @@ generateButton.addEventListener("click", async () => {
   }
 });
 
-restartButton.addEventListener("click", () => {
+restartButton.addEventListener("click", restartQuiz);
+storyBackButton.addEventListener("click", () => showSlide("result", -1));
+storyRestartButton.addEventListener("click", restartQuiz);
+
+function restartQuiz() {
   form.reset();
   formMessage.textContent = "";
+  profileMessage.textContent = "";
   state.result = null;
   state.story = null;
   state.interest = "boy";
-  resultPanel.classList.add("hidden");
-  quizPanel.classList.remove("hidden");
-  contentGrid.classList.remove("result-mode");
   resetStoryUi();
   renderFandomOptions();
   renderInterestOptions();
   initializeQuiz();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
+  showSlide("intro", -1);
+}
 
 copyButton.addEventListener("click", async () => {
   if (!state.story) return;
@@ -330,13 +364,60 @@ copyButton.addEventListener("click", async () => {
   }
 });
 
+function showSlide(slideName, direction = 1) {
+  const nextSlide = slides.find((slide) => slide.dataset.slide === slideName);
+  if (!nextSlide || state.currentSlide === slideName) return;
+  const currentSlide = slides.find((slide) => slide.classList.contains("active"));
+  const forward = direction >= 0;
+  if (currentSlide) {
+    currentSlide.classList.remove("active", "slide-in-forward", "slide-in-back");
+    currentSlide.classList.add(forward ? "slide-out-forward" : "slide-out-back");
+    window.setTimeout(() => {
+      currentSlide.classList.remove("slide-out-forward", "slide-out-back");
+    }, 460);
+  }
+  nextSlide.classList.remove("slide-out-forward", "slide-out-back");
+  nextSlide.classList.add("active", forward ? "slide-in-forward" : "slide-in-back");
+  state.currentSlide = slideName;
+  updateSlideDots(slideName);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function updateSlideDots(slideName) {
+  const activeIndex = SLIDE_ORDER.indexOf(slideName);
+  slideDots.forEach((dot, index) => {
+    dot.classList.toggle("active", index === activeIndex);
+    dot.classList.toggle("completed", index < activeIndex);
+  });
+}
+
+function playRevealAnimation() {
+  revealNextButton.classList.remove("is-visible");
+  revealCard.classList.remove("is-spinning");
+  void revealCard.offsetWidth;
+  revealCard.classList.add("is-spinning");
+  window.setTimeout(() => {
+    revealNextButton.classList.add("is-visible");
+  }, 1250);
+}
+
 function renderFandomOptions() {
-  fandomRoot.innerHTML = Object.values(FANDOMS).map((fandom) => `
+  const fandoms = Object.values(FANDOMS);
+  const totalCharacters = fandoms.reduce((sum, fandom) => sum + fandom.characters.length, 0);
+  fandomRoot.innerHTML = fandoms.map((fandom) => {
+    const percent = Math.round((fandom.characters.length / totalCharacters) * 100);
+    return `
     <label class="fandom-card">
       <input type="radio" name="fandom" value="${fandom.id}" ${fandom.id === state.fandom.id ? "checked" : ""} />
-      <span><strong>${fandom.label}</strong><small>${fandom.note}</small></span>
+      <span class="fandom-card-body">
+        <strong>${fandom.label}</strong>
+        <small>${fandom.note}</small>
+        <span class="fandom-progress-meta">${fandom.characters.length} из ${totalCharacters} персонажей · ${percent}% базы</span>
+        <span class="fandom-progress-bar"><span style="width: ${percent}%"></span></span>
+      </span>
     </label>
-  `).join("");
+  `;
+  }).join("");
   fandomRoot.onchange = (event) => {
     const selected = event.target.closest('input[name="fandom"]');
     if (!selected) return;
@@ -397,7 +478,7 @@ function renderCurrentQuestion() {
   const progressPercent = ((state.currentQuestionIndex + 1) / state.questionOrder.length) * 100;
   progressText.textContent = `${state.currentQuestionIndex + 1} / ${state.questionOrder.length}`;
   progressFill.style.width = `${progressPercent}%`;
-  previousButton.disabled = state.currentQuestionIndex === 0;
+  previousButton.disabled = false;
   nextButton.textContent = isLastQuestion ? "Узнать результат" : "Дальше";
   formMessage.textContent = "";
 }
@@ -413,18 +494,16 @@ function updateSliderLabel(slider) {
   const label = document.querySelector("#slider-value");
   if (label) label.textContent = `${slider.value}%`;
 }
-function validateProfile() {
+function validateProfile(messageRoot = formMessage) {
   const participantName = normalizeName(participantNameInput.value.trim());
   if (!participantName) {
-    formMessage.textContent = "Впиши имя: оно обязательно появится в итоговой истории.";
+    messageRoot.textContent = "Впиши имя: оно обязательно появится в итоговой истории.";
     participantNameInput.focus();
     return false;
   }
-  if (!ageConfirmedInput.checked) {
-    formMessage.textContent = "Нужно подтвердить 18+, чтобы сгенерировать романтическую историю.";
-    return false;
-  }
   participantNameInput.value = participantName;
+  formMessage.textContent = "";
+  profileMessage.textContent = "";
   return true;
 }
 
@@ -470,31 +549,50 @@ function updateResultPanel(character, answers) {
   storyStatus.textContent = "Совпадение собрано. Можно сгенерировать личную историю по твоему вайбу.";
 }
 
+function updateRevealPanel(character) {
+  applyResultRarity(character);
+  revealName.textContent = `${character.name} · ${state.fandom.label} · ${character.rarity}`;
+  revealCrest.textContent = character.crest;
+  updateCharacterPortrait(character, revealImage, revealCrest);
+}
+
 function applyResultRarity(character) {
   const rarity = CHARACTER_RARITIES[character.id] || "C";
-  resultCard.classList.remove(...RARITY_CLASSES);
-  resultCard.classList.add(`rarity-${rarity.toLowerCase()}`);
-  resultCard.dataset.rarity = rarity;
+  applyRarityClass(resultCard, rarity);
+  applyRarityClass(revealCard, rarity);
+}
+
+function applyRarityClass(element, rarity) {
+  if (!element) return;
+  element.classList.remove(...RARITY_CLASSES);
+  element.classList.add(`rarity-${rarity.toLowerCase()}`);
+  element.dataset.rarity = rarity;
 }
 
 function updateResultImage(character) {
-  const embeddedImage = character.imageKey && window.CHARACTER_IMAGE_DATA && window.CHARACTER_IMAGE_DATA[character.imageKey] ? window.CHARACTER_IMAGE_DATA[character.imageKey] : "";
   resultImage.classList.add("hidden");
   resultImageFallback.classList.add("hidden");
   resultCrest.classList.remove("hidden");
-  resultImage.removeAttribute("src");
-  resultImage.alt = "";
-  resultImage.onload = null;
-  resultImage.onerror = null;
+  updateCharacterPortrait(character, resultImage, resultCrest);
+}
+
+function updateCharacterPortrait(character, imageElement, crestElement) {
+  const embeddedImage = character.imageKey && window.CHARACTER_IMAGE_DATA && window.CHARACTER_IMAGE_DATA[character.imageKey] ? window.CHARACTER_IMAGE_DATA[character.imageKey] : "";
+  imageElement.classList.add("hidden");
+  crestElement.classList.remove("hidden");
+  imageElement.removeAttribute("src");
+  imageElement.alt = "";
+  imageElement.onload = null;
+  imageElement.onerror = null;
   if (!embeddedImage) return;
-  resultImage.onerror = () => {
-    resultImage.classList.add("hidden");
-    resultCrest.classList.remove("hidden");
+  imageElement.onerror = () => {
+    imageElement.classList.add("hidden");
+    crestElement.classList.remove("hidden");
   };
-  resultImage.classList.remove("hidden");
-  resultCrest.classList.add("hidden");
-  resultImage.src = embeddedImage;
-  resultImage.alt = `Портрет персонажа ${character.name}`;
+  imageElement.classList.remove("hidden");
+  crestElement.classList.add("hidden");
+  imageElement.src = embeddedImage;
+  imageElement.alt = `Портрет персонажа ${character.name}`;
 }
 
 function resetStoryUi() {
