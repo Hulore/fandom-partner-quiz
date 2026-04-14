@@ -170,6 +170,15 @@ const FANDOMS = {
   ]),
 };
 
+const FANDOM_CHARACTER_TARGETS = {
+  one_piece: { total: 80, label: "крупная база" },
+  jjk: { total: 28, label: "средняя база" },
+  mha: { total: 50, label: "крупная база" },
+  naruto: { total: 60, label: "крупная база" },
+  persona5: { total: 24, label: "компактная база" },
+  bg3: { total: 22, label: "компактная база" },
+};
+
 const QUESTION_CATEGORIES = [
   { id: "fun", label: "Приколы" },
   { id: "relationship", label: "Отношения" },
@@ -403,16 +412,16 @@ function playRevealAnimation() {
 
 function renderFandomOptions() {
   const fandoms = Object.values(FANDOMS);
-  const totalCharacters = fandoms.reduce((sum, fandom) => sum + fandom.characters.length, 0);
   fandomRoot.innerHTML = fandoms.map((fandom) => {
-    const percent = Math.round((fandom.characters.length / totalCharacters) * 100);
+    const target = FANDOM_CHARACTER_TARGETS[fandom.id] || { total: fandom.characters.length, label: "текущая база" };
+    const percent = Math.min(100, Math.round((fandom.characters.length / target.total) * 100));
     return `
     <label class="fandom-card">
       <input type="radio" name="fandom" value="${fandom.id}" ${fandom.id === state.fandom.id ? "checked" : ""} />
       <span class="fandom-card-body">
         <strong>${fandom.label}</strong>
         <small>${fandom.note}</small>
-        <span class="fandom-progress-meta">${fandom.characters.length} из ${totalCharacters} персонажей · ${percent}% базы</span>
+        <span class="fandom-progress-meta">${fandom.characters.length} из ~${target.total} значимых кандидатов · ${percent}% · ${target.label}</span>
         <span class="fandom-progress-bar"><span style="width: ${percent}%"></span></span>
       </span>
     </label>
