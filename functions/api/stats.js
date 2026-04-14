@@ -55,7 +55,7 @@ export async function onRequestPost({ request, env }) {
 
 export async function onRequestGet({ request, env }) {
   if (!env.STATS_KV) {
-    return jsonResponse({ ok: false, enabled: false, error: "STATS_KV binding is not configured." }, 503);
+    return jsonResponse({ ok: false, enabled: false, error: "STATS_KV binding is not configured." }, 200);
   }
 
   const url = new URL(request.url);
