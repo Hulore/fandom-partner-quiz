@@ -66,7 +66,7 @@ const PROMPT_OPENINGS = [
   "Создай короткий фанфик с контрастом между опасным миром и мягкими чувствами по выбранному мэтчу.",
   "Создай короткий фанфик с уютной романтикой после трудного дня по выбранному мэтчу.",
   "Создай короткий фанфик с романтикой, которая начинается с нелепости, по выбранному мэтчу.",
-  "Создай короткий фанфик с атмосферой дороги, случайного разговора и судьбоносной симпатии по выбранному мэтчу.",
+  "Создай короткий фанфик с атмосферой дороги, случайного разговора и симпатии, которая проявляется через поступки, по выбранному мэтчу.",
   "Создай короткий фанфик с лёгкой авантюрой и тихим признанием по выбранному мэтчу.",
   "Создай короткий фанфик с романтической историей взросления вместе по выбранному мэтчу.",
   "Создай короткий фанфик с настроением письма из будущего о прожитой любви по выбранному мэтчу.",
@@ -260,7 +260,7 @@ export async function onRequestPost(context) {
 
   if (primaryAttempt.story) {
     return jsonResponse(
-      { story: ensureNamePresence(primaryAttempt.story, participantName, character.name) },
+      { story: primaryAttempt.story },
       200,
     );
   }
@@ -274,7 +274,7 @@ export async function onRequestPost(context) {
 
   if (fallbackAttempt.story) {
     return jsonResponse(
-      { story: ensureNamePresence(fallbackAttempt.story, participantName, character.name) },
+      { story: fallbackAttempt.story },
       200,
     );
   }
@@ -299,7 +299,7 @@ export async function onRequestPost(context) {
 
     if (compactAttempt.story) {
       return jsonResponse(
-        { story: ensureNamePresence(compactAttempt.story, participantName, character.name) },
+        { story: compactAttempt.story },
         200,
       );
     }
@@ -460,6 +460,7 @@ ${answerProfile}
 - Обязательно используй имя участника "${protagonist}" в самой истории и не меньше трёх раз по ходу текста.
 - Не упоминай тест, вопросы, ответы, шкалы, проценты, категории и любые формулировки из опросника.
 - Не пересказывай ориентиры напрямую. Используй их только скрыто: через выбор сцен, реакции, диалоги и динамику отношений.
+- Не начинай историю или intro с обобщений про совместимость, судьбу, совпадение ритма, "между ними сразу что-то возникло" и похожих клише. Начинай с конкретной сцены, действия, детали мира или живой реплики.
 - Не включай других пейрингов, ревности и explicit-контента.
 ${randomRequirements}${compactInstruction}`;
 }
@@ -755,27 +756,6 @@ function storyHasTestArtifacts(story) {
 
 function isOutputLimitError(error) {
   return typeof error === "string" && error.includes("лимита длины");
-}
-
-function ensureNamePresence(story, participantName, characterName) {
-  if (!participantName) {
-    return story;
-  }
-
-  const safeName = participantName.trim();
-  const lowerName = safeName.toLocaleLowerCase("ru");
-  const introHasName = story.intro.toLocaleLowerCase("ru").includes(lowerName);
-  const storyHasName = story.story.toLocaleLowerCase("ru").includes(lowerName);
-
-  return {
-    title: story.title,
-    intro: introHasName
-      ? story.intro
-      : `${safeName} и ${characterName} удивительно легко совпали по ритму чувств. ${story.intro}`,
-    story: storyHasName
-      ? story.story
-      : `Для ${safeName} всё началось с моря, ветра и той самой встречи, после которой жизнь уже не осталась прежней.\n\n${story.story}`,
-  };
 }
 
 function describeNonStoryResponse(data) {
