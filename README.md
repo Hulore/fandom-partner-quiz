@@ -4,7 +4,7 @@
 
 ## Что готово
 
-- Статический фронтенд без сборки: `index.html`, `styles.css`, `app.js`
+- Статический фронтенд без сборки: `public/index.html`, `public/styles.css`, `public/app.js`
 - Cloudflare Pages Function для генерации истории: `functions/api/story.js`
 - 72 персонажа из 6 фандомов со встроенными картинками
 - Слайдовый сценарий прохождения без длинного скролла
@@ -62,11 +62,11 @@ git push
 
 ## Настройки Cloudflare Pages
 
-Для проекта без сборки нужны такие значения:
+Проект теперь деплоится как Cloudflare Worker со Static Assets. В настройках билда должны быть такие значения:
 
-- `Framework preset`: `None`
-- `Build command`: оставить пустым
-- `Build output directory`: `.`
+- `Build command`: оставить пустым или `None`
+- `Deploy command`: `npx wrangler deploy`
+- `Root directory`: `/`
 
 В переменных окружения Cloudflare должны быть:
 
@@ -110,6 +110,6 @@ https://fandom-partner-quiz.hulore.workers.dev/?platform=telegram
 
 ## Что можно менять под себя
 
-- В `app.js` можно менять фандомы, персонажей, вопросы и логику мэтча.
+- В `public/app.js` можно менять фандомы, персонажей, вопросы и логику мэтча.
 - В `functions/api/story.js` можно менять промпт, модель и стиль истории.
-- В `styles.css` можно менять внешний вид, анимации и рамки редкости.
+- В `public/styles.css` можно менять внешний вид, анимации и рамки редкости.

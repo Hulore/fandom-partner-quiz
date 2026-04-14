@@ -1,0 +1,13 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fandom-partner-quiz",
+  "main": "worker/index.js",
+  "compatibility_date": "2026-04-14",
+  "workers_dev": true,
+  "keep_vars": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  }
+}
