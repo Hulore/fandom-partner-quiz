@@ -73,9 +73,24 @@ git push
 ```env
 OPENAI_API_KEY=твой_реальный_ключ
 OPENAI_MODEL=gpt-5-mini
+STATS_ADMIN_TOKEN=любой_длинный_секрет_для_просмотра_статистики
 ```
 
 `OPENAI_MODEL` можно не добавлять, но лучше добавить явно.
+
+Для сбора статистики добавь в Cloudflare KV namespace binding с именем:
+
+```text
+STATS_KV
+```
+
+Статистика не отправляет имя участника, Telegram ID или конкретные ответы. Сохраняются только агрегаты: старт теста, результат, генерация истории, шаринг, фандом, интерес, персонаж, редкость и платформа.
+
+Посмотреть сырые счётчики можно по ссылке:
+
+```text
+https://fandom-partner-quiz.hulore.workers.dev/api/stats?token=ТВОЙ_STATS_ADMIN_TOKEN
+```
 
 ## Telegram Mini App
 

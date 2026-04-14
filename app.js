@@ -80,6 +80,80 @@ const CHARACTER_RARITIES = {
   bg3_alfira: "B",
 };
 const RARITY_CLASSES = ["rarity-sss", "rarity-s", "rarity-a", "rarity-b", "rarity-c"];
+const CHARACTER_SHARE_IMAGE_FILES = {
+  ace: "ace.jpg",
+  bg3_alfira: "bg3_alfira.webp",
+  bg3_astarion: "bg3_astarion.webp",
+  bg3_dammon: "bg3_dammon.webp",
+  bg3_gale: "bg3_gale.webp",
+  bg3_halsin: "bg3_halsin.webp",
+  bg3_jaheira: "bg3_jaheira.webp",
+  bg3_karlach: "bg3_karlach.webp",
+  bg3_lae_zel: "bg3_lae_zel.webp",
+  bg3_minthara: "bg3_minthara.webp",
+  bg3_rolan: "bg3_rolan.webp",
+  bg3_shadowheart: "bg3_shadowheart.webp",
+  bg3_wyll: "bg3_wyll.webp",
+  jjk_choso: "jjk_choso.jpg",
+  jjk_geto: "jjk_geto.jpg",
+  jjk_gojo: "jjk_gojo.jpg",
+  jjk_higuruma: "jjk_higuruma.jpg",
+  jjk_maki: "jjk_maki.webp",
+  jjk_mei_mei: "jjk_mei_mei.webp",
+  jjk_nanami: "jjk_nanami.jpg",
+  jjk_nobara: "jjk_nobara.webp",
+  jjk_shoko: "jjk_shoko.webp",
+  jjk_toji: "jjk_toji.jpg",
+  jjk_utahime: "jjk_utahime.webp",
+  jjk_yuki: "jjk_yuki.webp",
+  law: "law.jpg",
+  mha_aizawa: "mha_aizawa.webp",
+  mha_best_jeanist: "mha_best_jeanist.webp",
+  mha_fatgum: "mha_fatgum.webp",
+  mha_hawks: "mha_hawks.webp",
+  mha_lady_nagant: "mha_lady_nagant.webp",
+  mha_midnight: "mha_midnight.webp",
+  mha_mirko: "mha_mirko.webp",
+  mha_ms_joke: "mha_ms_joke.webp",
+  mha_mt_lady: "mha_mt_lady.webp",
+  mha_nighteye: "mha_nighteye.webp",
+  mha_present_mic: "mha_present_mic.webp",
+  mha_ryukyu: "mha_ryukyu.webp",
+  naruto_gaara: "naruto_gaara.webp",
+  naruto_hinata: "naruto_hinata.webp",
+  naruto_ino: "naruto_ino.webp",
+  naruto_iruka: "naruto_iruka.webp",
+  naruto_itachi: "naruto_itachi.webp",
+  naruto_kakashi: "naruto_kakashi.webp",
+  naruto_mei: "naruto_mei.webp",
+  naruto_sakura: "naruto_sakura.webp",
+  naruto_shikamaru: "naruto_shikamaru.webp",
+  naruto_temari: "naruto_temari.webp",
+  naruto_tsunade: "naruto_tsunade.webp",
+  naruto_yamato: "naruto_yamato.webp",
+  one_piece_hancock: "one_piece_hancock.webp",
+  one_piece_nami: "one_piece_nami.webp",
+  one_piece_perona: "one_piece_perona.webp",
+  one_piece_robin: "one_piece_robin.webp",
+  one_piece_tashigi: "one_piece_tashigi.webp",
+  one_piece_vivi: "one_piece_vivi.webp",
+  p5_akechi: "p5_akechi.webp",
+  p5_ann: "p5_ann.webp",
+  p5_futaba: "p5_futaba.webp",
+  p5_haru: "p5_haru.webp",
+  p5_iwai: "p5_iwai.webp",
+  p5_makoto: "p5_makoto.webp",
+  p5_maruki: "p5_maruki.webp",
+  p5_ren: "p5_ren.webp",
+  p5_ryuji: "p5_ryuji.webp",
+  p5_sae: "p5_sae.webp",
+  p5_takemi: "p5_takemi.webp",
+  p5_yusuke: "p5_yusuke.webp",
+  sabo: "sabo.jpg",
+  sanji: "sanji.jpg",
+  shanks: "shanks.jpg",
+  zoro: "zoro.jpg",
+};
 const ch = (id, name, crest, imageKey, subtitle, flavor, traits, values, gender = "boy") => ({ id, name, crest, imageKey, gender, rarity: CHARACTER_RARITIES[id] || "C", subtitle, description: flavor, promptFlavor: flavor, traits, profile: profile(values) });
 const fandom = (id, label, note, storyWorld, characters) => ({ id, label, note, storyWorld, characters });
 
@@ -253,7 +327,10 @@ renderInterestOptions();
 initializeQuiz();
 setupTelegramMode();
 
-introNextButton.addEventListener("click", () => showSlide("fandom"));
+introNextButton.addEventListener("click", () => {
+  trackQuizEvent("start");
+  showSlide("fandom");
+});
 fandomBackButton.addEventListener("click", () => showSlide("intro", -1));
 fandomNextButton.addEventListener("click", () => showSlide("profile"));
 profileBackButton.addEventListener("click", () => showSlide("fandom", -1));
@@ -290,6 +367,7 @@ form.addEventListener("submit", (event) => {
   resetStoryUi();
   updateResultPanel(result.character, result.answers);
   updateRevealPanel(result.character);
+  trackQuizEvent("result", { characterId: result.character.id, rarity: result.character.rarity });
   showSlide("reveal");
   playRevealAnimation();
 });
@@ -342,6 +420,7 @@ generateButton.addEventListener("click", async () => {
     storyText.textContent = payload.story.story;
     storyBox.classList.remove("hidden");
     storyStatus.textContent = "История готова. Можно копировать или пройти тест ещё раз.";
+    trackQuizEvent("story", { characterId: state.result.id, rarity: state.result.rarity });
     showSlide("story");
   } catch (error) {
     storyStatus.textContent = error.message || "С генерацией что-то пошло не так. Проверь настройку OpenAI API на сервере.";
@@ -441,17 +520,52 @@ function updateTelegramBackButton() {
 }
 
 function shareTelegramResult() {
-  const url = new URL(window.location.href);
-  url.searchParams.set("platform", "telegram");
+  trackQuizEvent("share", state.result ? { characterId: state.result.id, rarity: state.result.rarity } : {});
+  const url = buildResultShareUrl();
   const resultText = state.result
     ? `Мне выпал(а) ${state.result.name} из ${state.fandom.label}. Пройди тоже квиз "Кто твой партнёр из фандома?"`
     : `Пройди квиз "Кто твой партнёр из фандома?"`;
-  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url.toString())}&text=${encodeURIComponent(resultText)}`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(resultText)}`;
   if (telegramApp && telegramApp.openTelegramLink) {
     telegramApp.openTelegramLink(shareUrl);
     return;
   }
   window.open(shareUrl, "_blank", "noopener");
+}
+
+function buildResultShareUrl() {
+  if (!state.result) {
+    const appUrl = new URL("/", window.location.origin);
+    appUrl.searchParams.set("platform", "telegram");
+    return appUrl.toString();
+  }
+  const shareUrl = new URL("/share", window.location.origin);
+  shareUrl.searchParams.set("platform", "telegram");
+  shareUrl.searchParams.set("character", state.result.id);
+  shareUrl.searchParams.set("name", state.result.name);
+  shareUrl.searchParams.set("fandom", state.fandom.label);
+  shareUrl.searchParams.set("rarity", state.result.rarity);
+  const imageFile = CHARACTER_SHARE_IMAGE_FILES[state.result.imageKey];
+  if (imageFile) shareUrl.searchParams.set("image", imageFile);
+  return shareUrl.toString();
+}
+
+function trackQuizEvent(eventName, details = {}) {
+  const payload = {
+    event: eventName,
+    platform: state.telegramMode ? "telegram" : "web",
+    fandomId: state.fandom.id,
+    fandomName: state.fandom.label,
+    interest: state.interest,
+    characterId: details.characterId || "",
+    rarity: details.rarity || "",
+  };
+  fetch("./api/stats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => {});
 }
 
 function showSlide(slideName, direction = 1) {
