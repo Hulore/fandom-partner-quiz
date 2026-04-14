@@ -60,7 +60,7 @@ body::after {
 
 body.telegram-mode {
   min-height: var(--tg-viewport-height, 100vh);
-  color: var(--tg-theme-text-color, var(--ink));
+  color: var(--ink);
   background:
     radial-gradient(circle at top left, rgba(248, 203, 124, 0.18), transparent 30%),
     linear-gradient(180deg, var(--tg-theme-bg-color, var(--bg-top)) 0%, #0f2637 100%);
@@ -182,8 +182,31 @@ body.telegram-mode .slide-progress {
 
 body.telegram-mode .hero-slide,
 body.telegram-mode .panel {
+  color: var(--ink);
   padding: 20px;
   border-radius: 24px;
+}
+
+body.telegram-mode .hero-slide h1,
+body.telegram-mode .panel h2,
+body.telegram-mode .story-head h3,
+body.telegram-mode .result-copy h3,
+body.telegram-mode .fandom-card strong,
+body.telegram-mode .field > span:first-child {
+  color: var(--ink);
+}
+
+body.telegram-mode .panel-meta,
+body.telegram-mode .story-hint,
+body.telegram-mode .story-status,
+body.telegram-mode .form-message,
+body.telegram-mode .result-subtitle,
+body.telegram-mode .result-description,
+body.telegram-mode .story-intro,
+body.telegram-mode .story-text,
+body.telegram-mode .field span:last-child,
+body.telegram-mode .fandom-card small {
+  color: var(--muted);
 }
 
 .hero::after,
