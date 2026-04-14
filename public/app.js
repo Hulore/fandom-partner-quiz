@@ -412,8 +412,15 @@ generateButton.addEventListener("click", async () => {
         visitorId: getVisitorId(),
       }),
     });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(payload.error || "Не удалось получить историю.");
+    const responseText = await response.text();
+    const payload = parseJsonResponse(responseText);
+    if (!response.ok) {
+      const serverMessage = payload && payload.error ? payload.error : responseText.trim().slice(0, 220);
+      throw new Error(serverMessage ? `Сервер вернул ${response.status}: ${serverMessage}` : `Сервер вернул ${response.status}, но без текста ошибки.`);
+    }
+    if (!payload || !payload.story) {
+      throw new Error("Сервер ответил, но не вернул историю в ожидаемом формате.");
+    }
     state.story = payload.story;
     storyTitle.textContent = payload.story.title;
     storyIntro.textContent = payload.story.intro;
@@ -830,6 +837,13 @@ function describePercent(percent) {
   if (percent < 60) return "примерно посередине";
   if (percent < 85) return "скорее про меня";
   return "это очень про меня";
+}
+function parseJsonResponse(value) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 function normalizeName(value) { return value.replace(/[^A-Za-zА-Яа-яЁё0-9\s\-'.]/g, "").replace(/\s+/g, " ").trim().slice(0, 40); }
 function getVisitorId() {
