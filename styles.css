@@ -58,6 +58,19 @@ body::after {
   background: rgba(149, 207, 233, 0.08);
 }
 
+body.telegram-mode {
+  min-height: var(--tg-viewport-height, 100vh);
+  color: var(--tg-theme-text-color, var(--ink));
+  background:
+    radial-gradient(circle at top left, rgba(248, 203, 124, 0.18), transparent 30%),
+    linear-gradient(180deg, var(--tg-theme-bg-color, var(--bg-top)) 0%, #0f2637 100%);
+}
+
+body.telegram-mode::before,
+body.telegram-mode::after {
+  display: none;
+}
+
 .page-shell {
   position: relative;
   z-index: 1;
@@ -66,10 +79,19 @@ body::after {
   padding: 32px 0 56px;
 }
 
+body.telegram-mode .page-shell {
+  width: min(100% - 16px, 900px);
+  padding: max(12px, env(safe-area-inset-top)) 0 max(18px, env(safe-area-inset-bottom));
+}
+
 .app-shell {
   position: relative;
   min-height: calc(100vh - 88px);
   perspective: 1400px;
+}
+
+body.telegram-mode .app-shell {
+  min-height: calc(var(--tg-viewport-height, 100vh) - 24px);
 }
 
 .slide-progress {
@@ -77,6 +99,10 @@ body::after {
   justify-content: center;
   gap: 8px;
   margin-bottom: 18px;
+}
+
+body.telegram-mode .slide-progress {
+  margin-bottom: 10px;
 }
 
 .slide-dot {
@@ -154,6 +180,12 @@ body::after {
   padding: 34px;
 }
 
+body.telegram-mode .hero-slide,
+body.telegram-mode .panel {
+  padding: 20px;
+  border-radius: 24px;
+}
+
 .hero::after,
 .hero-slide::after {
   position: absolute;
@@ -189,6 +221,14 @@ body::after {
   align-items: stretch;
 }
 
+body.telegram-mode .hero-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.telegram-mode .hero-card {
+  display: none;
+}
+
 .hero h1,
 .hero-slide h1,
 .panel h2,
@@ -205,12 +245,22 @@ body::after {
   font-size: clamp(3rem, 7vw, 5.6rem);
 }
 
+body.telegram-mode .hero-slide h1 {
+  font-size: clamp(2.5rem, 13vw, 4.3rem);
+}
+
 .hero-text {
   max-width: 58ch;
   margin: 18px 0 0;
   color: var(--muted);
   font-size: 1.05rem;
   line-height: 1.65;
+}
+
+body.telegram-mode .hero-text {
+  margin-top: 14px;
+  font-size: 0.98rem;
+  line-height: 1.55;
 }
 
 .hero-tags,
@@ -324,11 +374,19 @@ body::after {
   margin-top: 8px;
 }
 
+body.telegram-mode .fandom-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .interest-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-top: 8px;
+}
+
+body.telegram-mode .interest-grid {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .fandom-card {
@@ -598,6 +656,11 @@ input[type="range"] {
   box-shadow: 0 18px 34px rgba(168, 66, 46, 0.2);
 }
 
+body.telegram-mode .primary-button {
+  background: var(--tg-theme-button-color, linear-gradient(135deg, #d86f45, #a8422e));
+  color: var(--tg-theme-button-text-color, #fff9f4);
+}
+
 .primary-button:hover,
 .ghost-button:hover {
   transform: translateY(-1px);
@@ -616,6 +679,15 @@ input[type="range"] {
   background: rgba(255, 255, 255, 0.76);
   color: var(--ink);
   border: 1px solid rgba(20, 33, 45, 0.1);
+}
+
+body.telegram-mode .story-actions .primary-button,
+body.telegram-mode .story-actions .ghost-button,
+body.telegram-mode .form-actions .primary-button,
+body.telegram-mode .form-actions .ghost-button,
+body.telegram-mode .slide-nav .primary-button,
+body.telegram-mode .slide-nav .ghost-button {
+  width: 100%;
 }
 
 .form-actions {

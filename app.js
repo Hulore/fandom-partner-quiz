@@ -218,6 +218,7 @@ const profileMessage = document.querySelector("#profile-message");
 const generateButton = document.querySelector("#generate-button");
 const restartButton = document.querySelector("#restart-button");
 const copyButton = document.querySelector("#copy-button");
+const telegramShareButton = document.querySelector("#telegram-share-button");
 const previousButton = document.querySelector("#previous-button");
 const nextButton = document.querySelector("#next-button");
 const storyBox = document.querySelector("#story-box");
@@ -242,11 +243,15 @@ const participantNameInput = document.querySelector("#participantName");
 const fandomRoot = document.querySelector("#fandom-options");
 const interestRoot = document.querySelector("#interest-options");
 const SLIDE_ORDER = ["intro", "fandom", "profile", "questions", "reveal", "result", "story"];
-const state = { fandom: FANDOMS.one_piece, interest: "boy", result: null, answers: {}, story: null, questionOrder: [], currentQuestionIndex: 0, currentSlide: "intro" };
+const urlParams = new URLSearchParams(window.location.search);
+const telegramApp = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+const isTelegramMode = urlParams.get("platform") === "telegram" || Boolean(telegramApp && telegramApp.initData);
+const state = { fandom: FANDOMS.one_piece, interest: "boy", result: null, answers: {}, story: null, questionOrder: [], currentQuestionIndex: 0, currentSlide: "intro", telegramMode: isTelegramMode };
 
 renderFandomOptions();
 renderInterestOptions();
 initializeQuiz();
+setupTelegramMode();
 
 introNextButton.addEventListener("click", () => showSlide("fandom"));
 fandomBackButton.addEventListener("click", () => showSlide("intro", -1));
@@ -307,6 +312,7 @@ previousButton.addEventListener("click", () => {
 });
 
 revealNextButton.addEventListener("click", () => showSlide("result"));
+telegramShareButton.addEventListener("click", shareTelegramResult);
 
 generateButton.addEventListener("click", async () => {
   if (!state.result) return;
@@ -373,6 +379,81 @@ copyButton.addEventListener("click", async () => {
   }
 });
 
+function setupTelegramMode() {
+  if (!state.telegramMode) return;
+  document.body.classList.add("telegram-mode");
+  telegramShareButton.classList.remove("hidden");
+  autofillTelegramName();
+  if (!telegramApp) return;
+  telegramApp.ready();
+  telegramApp.expand();
+  try {
+    telegramApp.setHeaderColor("#07131f");
+    telegramApp.setBackgroundColor("#07131f");
+  } catch (error) {
+    // Older Telegram clients can ignore theme methods.
+  }
+  if (telegramApp.BackButton) {
+    telegramApp.BackButton.onClick(handleTelegramBack);
+    updateTelegramBackButton();
+  }
+}
+
+function autofillTelegramName() {
+  const user = telegramApp && telegramApp.initDataUnsafe ? telegramApp.initDataUnsafe.user : null;
+  if (!user || participantNameInput.value.trim()) return;
+  const telegramName = normalizeName([user.first_name, user.last_name].filter(Boolean).join(" ") || user.username || "");
+  if (telegramName) participantNameInput.value = telegramName;
+}
+
+function handleTelegramBack() {
+  if (state.currentSlide === "intro") {
+    if (telegramApp && telegramApp.close) telegramApp.close();
+    return;
+  }
+  if (state.currentSlide === "questions") {
+    persistCurrentAnswer();
+    if (state.currentQuestionIndex > 0) {
+      state.currentQuestionIndex -= 1;
+      renderCurrentQuestion();
+      return;
+    }
+    showSlide("profile", -1);
+    return;
+  }
+  const previousSlide = getPreviousSlideName();
+  if (previousSlide) showSlide(previousSlide, -1);
+}
+
+function getPreviousSlideName() {
+  const currentIndex = SLIDE_ORDER.indexOf(state.currentSlide);
+  if (currentIndex <= 0) return "";
+  return SLIDE_ORDER[currentIndex - 1];
+}
+
+function updateTelegramBackButton() {
+  if (!telegramApp || !telegramApp.BackButton) return;
+  if (state.currentSlide === "intro") {
+    telegramApp.BackButton.hide();
+    return;
+  }
+  telegramApp.BackButton.show();
+}
+
+function shareTelegramResult() {
+  const url = new URL(window.location.href);
+  url.searchParams.set("platform", "telegram");
+  const resultText = state.result
+    ? `Мне выпал(а) ${state.result.name} из ${state.fandom.label}. Пройди тоже квиз "Кто твой партнёр из фандома?"`
+    : `Пройди квиз "Кто твой партнёр из фандома?"`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(url.toString())}&text=${encodeURIComponent(resultText)}`;
+  if (telegramApp && telegramApp.openTelegramLink) {
+    telegramApp.openTelegramLink(shareUrl);
+    return;
+  }
+  window.open(shareUrl, "_blank", "noopener");
+}
+
 function showSlide(slideName, direction = 1) {
   const nextSlide = slides.find((slide) => slide.dataset.slide === slideName);
   if (!nextSlide || state.currentSlide === slideName) return;
@@ -389,6 +470,7 @@ function showSlide(slideName, direction = 1) {
   nextSlide.classList.add("active", forward ? "slide-in-forward" : "slide-in-back");
   state.currentSlide = slideName;
   updateSlideDots(slideName);
+  updateTelegramBackButton();
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 

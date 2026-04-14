@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <title>Кто твой партнёр из фандома?</title>
     <meta
@@ -225,6 +225,9 @@
             <button id="generate-button" class="primary-button" type="button">
               Сгенерировать нашу историю
             </button>
+            <button id="telegram-share-button" class="ghost-button telegram-only hidden" type="button">
+              Поделиться результатом
+            </button>
             <p class="story-hint">
               История создаётся после результата и учитывает фандом, мэтч и общий вайб ответов.
             </p>
@@ -254,7 +257,8 @@
       </main>
     </div>
 
-    <script src="./character-images.js?v=2026-04-14-slide-progress-2" defer></script>
-    <script src="./app.js?v=2026-04-14-slide-progress-2" defer></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+    <script src="./character-images.js?v=2026-04-14-telegram-1" defer></script>
+    <script src="./app.js?v=2026-04-14-telegram-1" defer></script>
   </body>
 </html>

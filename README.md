@@ -77,6 +77,22 @@ OPENAI_MODEL=gpt-5-mini
 
 `OPENAI_MODEL` можно не добавлять, но лучше добавить явно.
 
+## Telegram Mini App
+
+Обычная веб-версия открывается по базовой ссылке проекта:
+
+```text
+https://fandom-partner-quiz.hulore.workers.dev/
+```
+
+Для Telegram Mini App используй ту же ссылку, но с параметром:
+
+```text
+https://fandom-partner-quiz.hulore.workers.dev/?platform=telegram
+```
+
+Этот параметр включает Telegram-режим: компактные отступы, поддержку кнопки назад внутри Telegram, автоподстановку имени пользователя Telegram и кнопку “Поделиться результатом”.
+
 ## Что можно менять под себя
 
 - В `app.js` можно менять фандомы, персонажей, вопросы и логику мэтча.
